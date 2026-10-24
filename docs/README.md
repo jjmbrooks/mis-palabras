@@ -4,6 +4,7 @@
 |---|---|
 | [evidencia.md](evidencia.md) | Base de evidencia: principios de diseño pedagógico, fuentes revisadas por pares, limitaciones y referencias APA 7. |
 | [modos-de-uso.md](modos-de-uso.md) | Modos de uso (con tutor y explorar), tipos de carta, reglas de audio y el porqué de cada decisión de diseño. |
+| [mecanica-inicial.md](mecanica-inicial.md) | Mecánica del MVP: modo con tutor, flujo de carta, ayuda graduada, sesión, dominio, primer mazo, criterios sensoriales y datos por ensayo. |
 
 ## Cómo proponer correcciones
 
