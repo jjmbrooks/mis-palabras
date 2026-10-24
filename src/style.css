@@ -57,3 +57,6 @@ table { border-collapse:collapse; width:100%; font-size:1rem; } td, th { text-al
 .help-b { margin: 1rem auto 0; display: block; }
 .cue { font-size: .85rem; margin: 0 auto .5rem; display: block; }
 tr.sub td { font-size: .8rem; color: #6b6458; padding-top: 0; }
+/* D14: instrucción hablada con botón grande para repetirla */
+.instr-row { display: flex; align-items: center; justify-content: center; gap: .75rem; }
+.btn.again { font-size: 2rem; width: 4rem; height: 4rem; border-radius: 50%; padding: 0; line-height: 1; }
