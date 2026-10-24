@@ -56,3 +56,4 @@ table { border-collapse:collapse; width:100%; font-size:1rem; } td, th { text-al
 .card.read { margin: 0 auto; padding: 1.2rem 2rem; cursor: default; }
 .help-b { margin: 1rem auto 0; display: block; }
 .cue { font-size: .85rem; margin: 0 auto .5rem; display: block; }
+tr.sub td { font-size: .8rem; color: #6b6458; padding-top: 0; }
