@@ -18,3 +18,7 @@ jobs:
       - run: npm test
       - run: npm run test:rules
       - run: npm run build
+      - name: Maquetación sin scroll (D15)
+        run: npm run test:layout
+        env:
+          CHROME: /usr/bin/google-chrome

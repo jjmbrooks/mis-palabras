@@ -1,6 +1,6 @@
 import './style.css';
 import { DECK, wordById, svgFor } from './deck';
-import { Session, IndependentSession, wordStates, nextHelp, toCSV, isIndependent, instructionFor, progress, clampIndepMinutes, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
+import { Session, IndependentSession, wordStates, nextHelp, toCSV, isIndependent, instructionFor, progress, cardTypeFor, Level, INDEP_GOAL, INDEP_MINUTES, INDEP_MIN_WORDS, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
 import { rewardFact } from './facts';
 import { say, chime, getVolume, setVolume } from './audio';
 import { Store, Child, demoStore, familyStore, signIn, onUser, newId } from './store';
@@ -16,16 +16,10 @@ const settings = {
   set helpDelay(v: number) { localStorage.setItem('mp.helpDelay', String(v)); },
   get reduceMotion() { return localStorage.getItem('mp.reduceMotion') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches; },
   set reduceMotion(v: boolean) { localStorage.setItem('mp.reduceMotion', v ? '1' : '0'); },
-  get indepMinutes() { return clampIndepMinutes(Number(localStorage.getItem('mp.indepMinutes') ?? '4')); },
-  set indepMinutes(v: number) { localStorage.setItem('mp.indepMinutes', String(clampIndepMinutes(v))); },
   get minutes() { return Number(localStorage.getItem('mp.minutes') ?? '8'); },
   set minutes(v: number) { localStorage.setItem('mp.minutes', String(v)); },
-  // D12.5: «ya conoce los dibujos», por mazo y por niño (el ajuste del niño, si existe, manda).
-  get deckKnowsPictures() { return localStorage.getItem('mp.knowsPics.deck') === '1'; },
-  set deckKnowsPictures(v: boolean) { localStorage.setItem('mp.knowsPics.deck', v ? '1' : '0'); },
-  childKnowsPictures(id: string): boolean | null { const v = localStorage.getItem(`mp.knowsPics.${id}`); return v === null ? null : v === '1'; },
-  setChildKnowsPictures(id: string, v: boolean | null) { const k = `mp.knowsPics.${id}`; v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v ? '1' : '0'); },
-  knowsPictures(id: string) { return settings.childKnowsPictures(id) ?? settings.deckKnowsPictures; },
+  // D15: «aún no conoce el vocabulario», por niño (desactivado por defecto). Activa el ensayo dibujo → palabra
+  // y la carta de enseñanza imagen + texto. Migra el ajuste de D12: «enseñar con imagen + texto» = activado.
 };
 const applyMotion = () => document.documentElement.classList.toggle('reduce-motion', settings.reduceMotion);
 applyMotion();
@@ -34,6 +28,8 @@ let store: Store | null = null;
 let child: Child | null = null;
 
 const BEE = svgFor(DECK[0]);
+/** Palabra con auto-ajuste por ancho (D15): --n = número de letras, ver .word en style.css. */
+const wordHtml = (text: string) => `<div class="word" style="--n:${[...text].length}">${text}</div>`;
 
 function login(msg = '') {
   h(`<main class="screen center">
@@ -74,8 +70,8 @@ async function home() {
       </form>
     </section>
     <button class="btn primary big" id="start" ${child ? '' : 'disabled'}>Empezar sesión con tutor</button>
-    ${child ? (soloOk ? `<button class="btn big" id="solo">Practicar solo (${settings.indepMinutes} min)</button>`
-      : '<p class="small center-t">«Practicar solo» se abre cuando haya palabras dominadas con el tutor.</p>') : ''}
+    ${child ? (soloOk ? `<button class="btn big" id="solo">Practicar solo (hasta ${INDEP_GOAL} aciertos o ${INDEP_MINUTES} min)</button>`
+      : `<p class="small center-t">«Practicar solo» se abre cuando haya ${INDEP_MIN_WORDS} palabras dominadas con el tutor.</p>`) : ''}
     <p class="small center-t">Mazo: Abejas y jardín · ${settings.minutes} min</p>
     <button class="btn ghost" id="adult">Mantén presionado para ajustes del tutor</button>
   </main>`);
@@ -105,26 +101,19 @@ async function tutorPanel() {
   const prog = child ? progress(await s.sessions(child.id), ts) : [];
   const mmss = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.round(ms / 1000) % 60).padStart(2, '0')}`;
   const st = wordStates(ts);
-  const lvl = ['dibujo → palabra', 'elegir palabra', 'leer sola'];
-  const ck = child ? settings.childKnowsPictures(child.id) : null;
+  const lvl = ['', 'N1 dibujo, 2 opciones', 'N2 dibujo, 3 opciones', 'N3 dibujo, parecidas', 'N4 sin dibujo (dominada)', 'N5 leer en voz alta'];
   h(`<main class="screen">
     <header class="bar"><button class="btn small-b" id="back">← Volver</button><strong>Tutor</strong></header>
     <section class="panel"><h2>Ajustes</h2>
       <label>Volumen <input type="range" id="vol" min="0" max="1" step="0.1" value="${getVolume()}"></label>
       <label>Espera antes de ayudar: <output id="hdv">${settings.helpDelay}</output> s <input type="range" id="hd" min="3" max="5" step="1" value="${settings.helpDelay}"></label>
       <label>Duración de la sesión: <output id="mnv">${settings.minutes}</output> min <input type="range" id="mn" min="5" max="10" step="1" value="${settings.minutes}"></label>
-      <label>Práctica sola: <output id="imv">${settings.indepMinutes}</output> min (se cierra sola) <input type="range" id="im" min="3" max="5" step="1" value="${settings.indepMinutes}"></label>
       <label class="check"><input type="checkbox" id="rm" ${settings.reduceMotion ? 'checked' : ''}> Reducir movimiento</label>
-      <label class="check"><input type="checkbox" id="kpd" ${settings.deckKnowsPictures ? 'checked' : ''}> Mazo «Abejas y jardín»: ya conoce los dibujos (saltar la enseñanza imagen + texto)</label>
-      ${child ? `<label>Para ${esc(child.nickname)}: <select id="kpc">
-        <option value="" ${ck === null ? 'selected' : ''}>como el mazo</option>
-        <option value="1" ${ck === true ? 'selected' : ''}>ya conoce los dibujos</option>
-        <option value="0" ${ck === false ? 'selected' : ''}>enseñar con imagen + texto</option></select></label>` : ''}
     </section>
     <section class="panel"><h2>Progreso${child ? ` de ${esc(child.nickname)}` : ''}</h2>
       <table><thead><tr><th>Palabra</th><th>Nivel</th><th>Ensayos</th></tr></thead><tbody>
       ${DECK.map(w => { const x = st.get(w.id)!; const n = ts.filter(t => t.word === w.id).length;
-        return `<tr><td>${w.text}</td><td>${x.mastered ? '✓ dominada' : lvl[x.level]}</td><td>${n}</td></tr>`; }).join('')}
+        return `<tr><td>${w.text}</td><td>${x.complete ? '✓ lee sola' : lvl[x.level]}</td><td>${n}</td></tr>`; }).join('')}
       </tbody></table>
     </section>
     <section class="panel"><h2>Sesiones</h2>
@@ -146,11 +135,8 @@ async function tutorPanel() {
   $('#back').onclick = home;
   $<HTMLInputElement>('#vol').oninput = e => setVolume(Number((e.target as HTMLInputElement).value));
   $<HTMLInputElement>('#hd').oninput = e => { settings.helpDelay = Number((e.target as HTMLInputElement).value); $('#hdv').textContent = String(settings.helpDelay); };
-  $<HTMLInputElement>('#im').oninput = e => { settings.indepMinutes = Number((e.target as HTMLInputElement).value); $('#imv').textContent = String(settings.indepMinutes); };
   $<HTMLInputElement>('#mn').oninput = e => { settings.minutes = Number((e.target as HTMLInputElement).value); $('#mnv').textContent = String(settings.minutes); };
   $<HTMLInputElement>('#rm').onchange = e => { settings.reduceMotion = (e.target as HTMLInputElement).checked; applyMotion(); };
-  $<HTMLInputElement>('#kpd').onchange = e => { settings.deckKnowsPictures = (e.target as HTMLInputElement).checked; };
-  $('#kpc') && ($<HTMLSelectElement>('#kpc').onchange = e => { const v = (e.target as HTMLSelectElement).value; settings.setChildKnowsPictures(child!.id, v === '' ? null : v === '1'); });
   const dl = (name: string, body: string, type: string) => {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([body], { type })); a.download = name; a.click();
   };
@@ -182,8 +168,9 @@ async function session(mode: Mode) {
   const solo = mode === 'independiente';
   const history = await s.trials(c.id);
   const states = wordStates(history);
-  const sess = solo ? null : new Session(states, Math.random, undefined, [], { knowsPictures: settings.knowsPictures(c.id) });
-  const indep = solo ? new IndependentSession(states, Math.random, settings.indepMinutes) : null;
+  // D15: el dibujo ya acompaña cada ensayo de elegir, así que no hay carta de enseñanza previa (daría la respuesta).
+  const sess = solo ? null : new Session(states, Math.random, undefined, [], { knowsPictures: true });
+  const indep = solo ? new IndependentSession(states, Math.random) : null;
   if (indep && !indep.available) return home();
   const sessionId = newId();
   const started = Date.now(), limit = indep ? indep.limitMs : settings.minutes * 60_000;
@@ -207,7 +194,7 @@ async function session(mode: Mode) {
   const stage = () => $('#stage');
   const card = (id: string, mode: 'both' | 'text' | 'img') => {
     const w = wordById(id);
-    return `${mode !== 'text' ? `<div class="pic">${svgFor(w)}</div>` : ''}${mode !== 'img' ? `<div class="word">${w.text}</div>` : ''}`;
+    return `${mode !== 'text' ? `<div class="pic">${svgFor(w)}</div>` : ''}${mode !== 'img' ? wordHtml(w.text) : ''}`;
   };
 
   async function present(word: string) {
@@ -225,21 +212,21 @@ async function session(mode: Mode) {
   // Práctica sola: la sesión se cierra sola al cumplirse el tiempo (D13).
   const autoClose = indep ? window.setTimeout(() => { stop = true; $('#end')?.click(); }, limit) : undefined;
 
-  function trial(spec: TrialSpec): Promise<{ help: Help; helps: number; correct: boolean; latency: number }> {
+  function trial(spec: TrialSpec): Promise<{ help: Help; helps: number; correct: boolean; miss: boolean; latency: number }> {
     return new Promise(resolve => {
       const w = wordById(spec.word);
       let helps = 0;
       let help: Help = 'ninguna', firstTry = true, firstTap = 0, timer: number | undefined, enabled = false;
       const t0 = Date.now();
       const reading = spec.cardType === 'leer';
-      const stim = spec.cardType === 'imagen_estimulo'
+      const stim = spec.picture
         ? `<div class="stim" aria-label="Dibujo">${card(spec.word, 'img')}</div>`
         : '';
-      // D14: instrucción neutra hablada, sin la palabra meta, con botón para repetirla.
+      // D14/D15: instrucción hablada con botón 🔊; en elegir nombra la palabra, en leer es neutra.
       const { spoken: instr, shown } = instructionFor(spec.cardType, w.text);
       const instrHtml = `<div class="instr-row"><p class="instr">${esc(shown)}</p>
         <button class="btn again" id="again" aria-label="Repetir la instrucción" title="Repetir la instrucción">🔊</button></div>`;
-      stage().innerHTML = `${spec.cardType === 'imagen_estimulo' ? stim + instrHtml : instrHtml + stim}
+      stage().innerHTML = `${stim + instrHtml}
         <div id="model" class="model" hidden aria-live="polite">${card(spec.word, 'both')}</div>
         <p id="tutor" class="note" hidden>Tutor: guía al niño hacia la palabra correcta (señala o acerca la carta).</p>
         ${reading
@@ -249,9 +236,12 @@ async function session(mode: Mode) {
               `<button class="card opt" data-id="${o}" disabled aria-label="${wordById(o).text}">${card(o, 'text')}</button>`).join('')}</div>`}
         <button class="btn help-b" id="help" disabled>Ayuda</button>`;
       const buttons = [...app.querySelectorAll<HTMLButtonElement>('.opt')];
+      let miss = false; // la primera respuesta fue incorrecta (D16: solo esto cuenta para bajar de nivel)
+      // Corrección sin error (D12/D16): tras un error o «Ayuda» se muestra el modelo (dibujo + palabra, también en
+      // N4 y N5, que no tienen dibujo), se resalta la opción correcta y solo esa queda activa. Luego se repite el ensayo.
       const escalate = () => {
         help = solo ? 'B' : nextHelp(help); helps++;
-        if (solo) buttons.forEach(b => { if (b.dataset.id !== spec.word) b.disabled = true; }); // sin tutor: ayuda sin error
+        buttons.forEach(b => { if (b.dataset.id !== spec.word) { b.disabled = true; b.classList.add('off'); } else b.classList.add('modelo'); });
         $('#model').hidden = false; $('#help').hidden = true; // ayuda = carta imagen + texto
         if (help === 'C') {
           $('#tutor').hidden = false; $('#help').hidden = true;
@@ -264,9 +254,16 @@ async function session(mode: Mode) {
         clearTimeout(timer); enabled = false;
         app.querySelectorAll<HTMLButtonElement>('.stage button').forEach(x => (x.disabled = true));
         const correct = isIndependent(firstTry && ok, help);
-        if (ok) { coins++; $('#coins').textContent = String(coins); chime(); }
-        await say(ok ? `¡${w.text}, muy bien!` : w.text); // el audio solo llega después de responder
-        resolve({ help, helps, correct, latency: firstTap - t0 });
+        if (ok) {
+          coins++; $('#coins').textContent = String(coins); chime();
+          // D15/D16: tras acertar queda solo la palabra correcta; en N4 y N5 (sin dibujo) el dibujo aparece ahora, como retroalimentación.
+          buttons.forEach(b => { if (b.dataset.id !== spec.word) b.hidden = true; else b.classList.add('ok'); });
+          $('#help').hidden = true;
+          if (!spec.picture) { $('#model').hidden = false; $('#model').classList.add('feedback'); if (reading) { $('#readw').hidden = true; } }
+        }
+        await Promise.all([say(ok ? `¡${w.text}, muy bien!` : w.text), ok ? sleep(900) : Promise.resolve()]);
+        // el audio de la palabra solo llega después de responder
+        resolve({ help, helps, correct, miss, latency: firstTap - t0 });
       };
       $('#again').onclick = () => { if (!$('#again').hasAttribute('disabled')) void say(instr); };
       // Se lee la instrucción (nunca la palabra) y luego hay una breve demora antes de habilitar.
@@ -276,15 +273,15 @@ async function session(mode: Mode) {
       $('#help').onclick = () => { if (enabled && help === 'ninguna') escalate(); };
       if (reading) {
         $('#rok').onclick = () => { if (!enabled) return; firstTap ||= Date.now(); void finish(true); };
-        $('#rno').onclick = () => { if (!enabled) return; firstTap ||= Date.now(); firstTry = false; if (help === 'C') void finish(false); else escalate(); };
+        $('#rno').onclick = () => { if (!enabled) return; firstTap ||= Date.now(); if (firstTry && help === 'ninguna') miss = true; firstTry = false; if (help === 'C') void finish(false); else escalate(); };
       }
       buttons.forEach(b => b.onclick = async () => {
         if (!enabled) return;
         firstTap ||= Date.now();
-        if (b.dataset.id !== spec.word) { firstTry = false; escalate(); return; } // sin sonido negativo
+        if (b.dataset.id !== spec.word) { if (firstTry && help === 'ninguna') miss = true; firstTry = false; escalate(); return; } // sin sonido negativo
         b.classList.add('ok'); void finish(true);
       });
-      $('#end').addEventListener('click', () => { clearTimeout(timer); resolve({ help, helps, correct: false, latency: -1 }); }, { once: true });
+      $('#end').addEventListener('click', () => { clearTimeout(timer); resolve({ help, helps, correct: false, miss: false, latency: -1 }); }, { once: true });
     });
   }
 
@@ -294,10 +291,10 @@ async function session(mode: Mode) {
     if (spec.presentFirst) { await present(spec.word); if (stop) break; }
     const r = await trial(spec);
     if (r.latency < 0) break;
-    indep ? indep.record(spec, r.correct) : sess!.record(spec, r.correct);
+    indep ? indep.record(spec, r.correct) : sess!.record(spec, r.correct, r.miss);
     practiced.add(spec.word); n++;
     const rec: TrialRecord = { childId: c.id, sessionId, word: spec.word, cardType: spec.cardType, help: r.help,
-      correct: r.correct, latencyMs: Math.max(0, Math.min(600000, r.latency)), at: Date.now(), mode, helps: Math.min(10, r.helps) };
+      correct: r.correct, latencyMs: Math.max(0, Math.min(600000, r.latency)), at: Date.now(), mode, helps: Math.min(10, r.helps), level: spec.level, miss: r.miss };
     await s.addTrial(rec);
   }
   clearTimeout(autoClose);
@@ -323,7 +320,7 @@ function reward(words: string[], coins: number) {
   const w = r ? wordById(r.word) : DECK[0];
   h(`<main class="screen center">
     <h1>¡Premio!</h1>
-    <button class="card present" id="fact" aria-label="Escuchar el dato curioso">${`<div class="pic">${svgFor(w)}</div><div class="word">${w.text}</div>`}</button>
+    <button class="card present" id="fact" aria-label="Escuchar el dato curioso">${`<div class="pic">${svgFor(w)}</div>${wordHtml(w.text)}`}</button>
     <p class="lead">${r ? esc(r.fact) : ''}</p>
     <p class="small">Ganaste <b>${coins}</b> 🪙 · Toca la carta para escucharlo.</p>
     <button class="btn primary" id="home">Listo</button>
@@ -335,17 +332,17 @@ function reward(words: string[], coins: number) {
 
 
 async function seedDemo(s: Store) {
-  const kinds = ['imagen_estimulo', 'imagen_estimulo', 'elegir_texto', 'elegir_texto', 'leer', 'leer'] as const;
-  const t0 = Date.now() - 6 * 86400000;
-  for (let i = 0; i < kinds.length; i++) {
-    const id = `semilla${i}`, at = t0 + i * 86400000;
-    for (const w of ['sol', 'miel', 'flor', 'abeja']) for (let k = 0; k < 3; k++)
-      await s.addTrial({ childId: 'demo', sessionId: id, word: w, cardType: kinds[i], help: k === 2 && i < 2 ? 'B' : 'ninguna',
-        correct: !(k === 2 && i < 2) || w !== 'flor', latencyMs: 1500, at: at + k, mode: 'tutor', helps: 0 });
-    // AGUA llega a elegir_texto y NUBE a leer, para ver los tres tipos de ensayo.
-    if (i < 2) for (const w of ['agua', 'nube']) await s.addTrial({ childId: 'demo', sessionId: id, word: w, cardType: kinds[i], help: 'ninguna', correct: true, latencyMs: 1500, at: at + 5, mode: 'tutor', helps: 0 });
-    if (i >= 2 && i < 4) await s.addTrial({ childId: 'demo', sessionId: id, word: 'nube', cardType: kinds[i], help: 'ninguna', correct: true, latencyMs: 1500, at: at + 5, mode: 'tutor', helps: 0 });
-    await s.addSession({ id, childId: 'demo', mode: 'tutor', deck: DECK_ID, startedAt: at, endedAt: at + 420000, durationMs: 420000, trials: 12 });
+  // D16: historial con niveles para ver N1–N5. ABEJA N1, MIEL N2, FLOR N3 (objetivos); AGUA y NUBE N4 y SOL N5
+  // (dominadas: abren «Practicar solo»). Cada subida = 2 sesiones seguidas con ≥90 % al primer intento.
+  const goal: Record<string, Level> = { abeja: 1, miel: 2, flor: 3, agua: 4, nube: 4, sol: 5 };
+  const t0 = Date.now() - 9 * 86400000;
+  for (let i = 0; i < 8; i++) {
+    const id = `semilla${i}`, at = t0 + i * 86400000, level = (Math.floor(i / 2) + 1) as Level;
+    let n = 0;
+    for (const [w, g] of Object.entries(goal)) if (level < g) for (let k = 0; k < 3; k++, n++)
+      await s.addTrial({ childId: 'demo', sessionId: id, word: w, cardType: cardTypeFor(level), help: 'ninguna',
+        correct: true, latencyMs: 1500, at: at + n, mode: 'tutor', helps: 0, level });
+    if (n) await s.addSession({ id, childId: 'demo', mode: 'tutor', deck: DECK_ID, startedAt: at, endedAt: at + 420000, durationMs: 420000, trials: n });
   }
 }
 

@@ -14,7 +14,7 @@ service cloud.firestore {
 
     // Ensayo: solo los campos mínimos de docs/mecanica-inicial.md §8.
     function validTrial(d) {
-      return d.keys().hasOnly(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps'])
+      return d.keys().hasOnly(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps', 'level', 'miss'])
         && d.keys().hasAll(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at'])
         && d.childId is string && d.childId.size() <= 40
         && d.sessionId is string && d.sessionId.size() <= 40
@@ -26,7 +26,10 @@ service cloud.firestore {
         && d.at is timestamp
         // D13 (opcionales para leer ensayos anteriores): modo y número de ayudas usadas.
         && (!('mode' in d) || d.mode in ['tutor', 'independiente'])
-        && (!('helps' in d) || (d.helps is int && d.helps >= 0 && d.helps <= 10));
+        && (!('helps' in d) || (d.helps is int && d.helps >= 0 && d.helps <= 10))
+        // D16 (opcional): nivel N1–N5 con que se presentó la palabra.
+        && (!('level' in d) || (d.level is int && d.level >= 1 && d.level <= 5))
+        && (!('miss' in d) || d.miss is bool);
     }
 
     // Sesión (D13): solo inicio, fin, duración, modo, mazo y número de ensayos.

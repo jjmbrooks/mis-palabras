@@ -14,7 +14,7 @@ Cómo el código cumple los requisitos de privacidad del [README](../README.md).
 ## Datos que se guardan
 `families/{uid}/children/{childId}`: `nickname`, `createdAt`.
 
-`families/{uid}/trials/{id}` (registro por ensayo, `docs/mecanica-inicial.md` §8): `word`, `correct` (acierto al primer intento sin ayuda), `at` (fecha y hora), y lo mínimo para decidir dominio y ayudas: `cardType`, `help`, `latencyMs`, `childId` y `sessionId` (aleatorios). Opcionales (D13): `mode` (tutor / independiente) y `helps` (0–10). Los ensayos no se editan.
+`families/{uid}/trials/{id}` (registro por ensayo, `docs/mecanica-inicial.md` §8): `word`, `correct` (acierto al primer intento sin ayuda), `at` (fecha y hora), y lo mínimo para decidir dominio y ayudas: `cardType`, `help`, `latencyMs`, `childId` y `sessionId` (aleatorios). Opcionales (D13): `mode` (tutor / independiente) y `helps` (0–10); (D16) `level` (1–5) y `miss` (la primera respuesta fue incorrecta). Los ensayos no se editan.
 
 `families/{uid}/sessions/{id}` (D13): `childId`, `mode`, `deck`, `startedAt`, `endedAt`, `durationMs`, `trials`. Sin apodo ni contenido; no se editan. El progreso se deriva de ensayos y sesiones, y borrar un perfil borra sus ensayos y sus sesiones, y con ellos su progreso (en la nube y en la caché local de Firestore).
 
