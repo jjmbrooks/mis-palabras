@@ -37,7 +37,7 @@ table { border-collapse:collapse; width:100%; font-size:1rem; } td, th { text-al
 .instr { font-size:1.6rem; text-align:center; margin:0; }
 .card { font:inherit; color:inherit; background:var(--card); border:3px solid var(--line); border-radius:22px; padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer; transition:transform .25s, border-color .25s; }
 .card .pic svg { width:100%; height:100%; } .card .pic { width:100%; max-width:180px; aspect-ratio:1; }
-.word { font-size:2.4rem; font-weight:800; letter-spacing:.06em; }
+.word { font-family:"DejaVu Sans", Verdana, "Arial Rounded MT Bold", sans-serif; font-size:2.4rem; font-weight:700; letter-spacing:.05em; color:#000; text-transform:uppercase; }
 .present { min-height:52vh; } .present .pic { max-width:260px; } .present .word { font-size:3.2rem; }
 [hidden] { display:none !important; }
 .model { justify-content:center; } .model:not([hidden]) { background:#f3eedf; border-radius:18px; padding:8px; display:flex; flex-direction:column; align-items:center; }
