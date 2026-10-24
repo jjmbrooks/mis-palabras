@@ -1,7 +1,14 @@
 // Lógica pura del Modo con tutor (docs/mecanica-inicial.md). Sin DOM ni Firebase: probada en tests/unit.
 import { DECK, SIMILAR } from './deck';
 
-export type CardType = 'imagen_texto' | 'emparejar' | 'solo_texto';
+/**
+ * Tipos de carta (D12, docs/mecanica-inicial.md §2).
+ * - imagen_estimulo: el niño ve solo el dibujo y elige entre palabras escritas.
+ * - elegir_texto: el tutor dice la palabra y el niño la elige entre 2–3 palabras escritas.
+ * - leer: el niño lee en voz alta la palabra escrita, sola; el tutor marca el resultado.
+ * imagen_texto / emparejar / solo_texto quedan solo para leer historiales anteriores a D12.
+ */
+export type CardType = 'imagen_estimulo' | 'elegir_texto' | 'leer' | 'imagen_texto' | 'emparejar' | 'solo_texto';
 export type Help = 'ninguna' | 'A' | 'B' | 'C';
 
 /** Registro por ensayo (§8). Sin nombre, fotos ni audio del niño. */
@@ -16,7 +23,10 @@ export interface TrialRecord {
   at: number; // fecha y hora (ms epoch)
 }
 
-export const LEVELS: CardType[] = ['imagen_texto', 'emparejar', 'solo_texto'];
+export const LEVELS: CardType[] = ['imagen_estimulo', 'elegir_texto', 'leer'];
+/** Equivalencia de historiales anteriores a D12 con los niveles actuales. */
+const LEGACY: Partial<Record<CardType, CardType>> = { imagen_texto: 'imagen_estimulo', emparejar: 'elegir_texto', solo_texto: 'leer' };
+const levelOf = (c: CardType) => LEVELS.indexOf(LEGACY[c] ?? c);
 export const MASTER = 0.9; // ≥ 90 % (§5)
 export const DROP = 0.6; // < ≈60 % (§5)
 
@@ -32,7 +42,7 @@ export function wordStates(history: TrialRecord[]): Map<string, WordState> {
     for (const t of trials) if (!sessions.includes(t.sessionId)) sessions.push(t.sessionId);
     let level = 0, mastered = false, hi = 0, lo = 0;
     for (const s of sessions) {
-      const ts = trials.filter(t => t.sessionId === s && t.cardType === LEVELS[level]);
+      const ts = trials.filter(t => t.sessionId === s && levelOf(t.cardType) === level);
       if (!ts.length) continue;
       const acc = ts.filter(t => t.correct).length / ts.length;
       if (acc >= MASTER) { hi++; lo = 0; } else if (acc < DROP) { lo++; hi = 0; } else { hi = 0; lo = 0; }
@@ -59,10 +69,18 @@ const similar = (a: string, b: string) => SIMILAR.some(([x, y]) => (x === a && y
 export interface TrialSpec {
   word: string;
   cardType: CardType;
-  options: string[]; // ya mezcladas
-  presentFirst: boolean; // mostrar la carta de presentación antes (§3.1)
-  repeat: boolean; // repetición tras ayuda
+  options: string[]; // palabras escritas, ya mezcladas ([word] en «leer»)
+  presentFirst: boolean; // fase de enseñanza imagen + texto antes (§3.1); nunca si el niño ya conoce los dibujos
+  repeat: boolean; // repetición sola tras ayuda: la única que cuenta como acierto independiente
 }
+
+export interface SessionOptions {
+  /** El niño ya conoce los dibujos: se salta la fase de enseñanza imagen + texto (D12.5). */
+  knowsPictures: boolean;
+}
+
+/** Acierto independiente: al primer intento y sin ayuda. Un ensayo con ayuda nunca cuenta (D12.2). */
+export const isIndependent = (firstTry: boolean, help: Help) => firstTry && help === 'ninguna';
 
 export interface SessionConfig { trials: number; maxTrials: number; targets: number }
 export const DEFAULT_CONFIG: SessionConfig = { trials: 12, maxTrials: 15, targets: 3 };
@@ -77,7 +95,8 @@ export class Session {
   private lastSpec: TrialSpec | null = null;
 
   constructor(private states: Map<string, WordState>, private rng: Rng = Math.random,
-              readonly cfg: SessionConfig = DEFAULT_CONFIG, preferred: string[] = []) {
+              readonly cfg: SessionConfig = DEFAULT_CONFIG, preferred: string[] = [],
+              readonly opts: SessionOptions = { knowsPictures: false }) {
     const notMastered = DECK.map(w => w.id).filter(id => !states.get(id)?.mastered);
     const ordered = [...preferred.filter(id => notMastered.includes(id)), ...notMastered.filter(id => !preferred.includes(id))];
     const t: string[] = [];
@@ -100,13 +119,14 @@ export class Session {
   }
 
   private build(word: string, repeat = false): TrialSpec {
+    const level = this.states.get(word)?.level ?? 0;
+    const cardType = LEVELS[level];
     const n = this.optionCount(word);
     const pool = shuffle(DECK.map(w => w.id).filter(id => id !== word && !similar(id, word)), this.rng);
-    const options = shuffle([word, ...pool.slice(0, n - 1)], this.rng);
-    const level = this.states.get(word)?.level ?? 0;
-    const presentFirst = !this.presented.has(word) && !this.states.get(word)?.mastered;
+    const options = cardType === 'leer' ? [word] : shuffle([word, ...pool.slice(0, n - 1)], this.rng);
+    const presentFirst = !this.opts.knowsPictures && !repeat && !this.presented.has(word) && !this.states.get(word)?.mastered;
     this.presented.add(word);
-    return { word, cardType: LEVELS[level], options, presentFirst, repeat };
+    return { word, cardType, options, presentFirst, repeat };
   }
 
   next(): TrialSpec | null {
@@ -123,7 +143,7 @@ export class Session {
     return spec;
   }
 
-  /** Tras responder: si hubo ayuda, se repite el ensayo y luego una palabra conocida (§3.4). */
+  /** Tras responder: si hubo ayuda o error, se repite la palabra sola (sin ayuda) y luego una conocida (§3.4). */
   record(spec: TrialSpec, correct: boolean) {
     this.done.push({ word: spec.word, correct });
     if (!correct && !spec.repeat) {
@@ -134,8 +154,12 @@ export class Session {
   }
 }
 
-/** Siguiente nivel de ayuda (A → B → C), sin sonido negativo. */
-export const nextHelp = (h: Help): Help => (h === 'ninguna' ? 'A' : h === 'A' ? 'B' : 'C');
+/**
+ * Siguiente nivel de ayuda (D12): ninguna → B (carta imagen + texto como ayuda) → C (guía del tutor).
+ * Se activa con el botón «Ayuda», tras ≈5 s sin respuesta o tras un error; sin sonido negativo.
+ * «A» queda solo para historiales anteriores a D12.
+ */
+export const nextHelp = (h: Help): Help => (h === 'ninguna' ? 'B' : 'C');
 
 export function toCSV(rows: TrialRecord[]): string {
   const head = ['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at'];

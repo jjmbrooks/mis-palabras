@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Session, wordStates, nextHelp, toCSV, TrialRecord } from '../../src/engine';
+import { Session, wordStates, nextHelp, toCSV, isIndependent, LEVELS, TrialRecord } from '../../src/engine';
 import { DECK, SIMILAR } from '../../src/deck';
 
 const seeded = (s = 1) => () => ((s = (s * 16807) % 2147483647) / 2147483647);
@@ -54,6 +54,43 @@ describe('dominio', () => {
       .map((c, i) => tr('sol', 's' + i, true, i, c as TrialRecord['cardType']));
     expect(wordStates(h).get('sol')!.mastered).toBe(true);
   });
-  it('ayuda escalonada A→B→C', () => { expect([nextHelp('ninguna'), nextHelp('A'), nextHelp('B'), nextHelp('C')]).toEqual(['A','B','C','C']); });
+  it('ayuda D12: ninguna → imagen + texto (B) → tutor (C)', () => { expect([nextHelp('ninguna'), nextHelp('B'), nextHelp('C')]).toEqual(['B','C','C']); });
   it('CSV con cabecera y escape', () => { expect(toCSV([tr('miel','s',true,0)]).split('\n')[0]).toBe('childId,sessionId,word,cardType,help,correct,latencyMs,at'); });
+});
+
+describe('D12: solo texto por defecto', () => {
+  const kinds = (st = wordStates([]), opts = { knowsPictures: false }, seed = 4) => {
+    const s = new Session(st, seeded(seed), undefined, [], opts); const out = []; let t;
+    while ((t = s.next())) { out.push(t); s.record(t, true); }
+    return out;
+  };
+  it('ningún nivel usa imagen + texto como carta de ensayo', () => {
+    expect(LEVELS).toEqual(['imagen_estimulo', 'elegir_texto', 'leer']);
+    for (const t of kinds()) expect(['imagen_estimulo', 'elegir_texto', 'leer']).toContain(t.cardType);
+  });
+  it('las opciones son palabras escritas (2–3) y «leer» muestra solo la palabra', () => {
+    for (const t of kinds()) { expect(t.options.length).toBeGreaterThanOrEqual(2); expect(t.options.length).toBeLessThanOrEqual(3); }
+    const lv2 = ['imagen_estimulo','imagen_estimulo','elegir_texto','elegir_texto'].map((c, i) => tr('sol', 'x' + i, true, i, c as TrialRecord['cardType']));
+    const t = new Session(wordStates(lv2), seeded(2), undefined, ['sol']).next()!;
+    expect(t.word === 'sol' ? t.options : ['sol']).toEqual(['sol']);
+  });
+  it('la repetición tras ayuda va sola, sin fase imagen + texto', () => {
+    const s = new Session(wordStates([]), seeded(9));
+    const t = s.next()!; expect(t.presentFirst).toBe(true); s.record(t, false);
+    const r = s.next()!; expect(r.repeat).toBe(true); expect(r.presentFirst).toBe(false);
+  });
+  it('un ensayo con ayuda nunca cuenta como acierto independiente', () => {
+    expect(isIndependent(true, 'ninguna')).toBe(true);
+    expect(isIndependent(true, 'B')).toBe(false);
+    expect(isIndependent(true, 'C')).toBe(false);
+    expect(isIndependent(false, 'ninguna')).toBe(false);
+  });
+  it('si el niño ya conoce los dibujos se salta la enseñanza imagen + texto', () => {
+    expect(kinds(undefined, { knowsPictures: true }).some(t => t.presentFirst)).toBe(false);
+    expect(kinds(undefined, { knowsPictures: false }).some(t => t.presentFirst)).toBe(true);
+  });
+  it('lee historiales anteriores a D12 (imagen_texto → imagen_estimulo, etc.)', () => {
+    const h = [tr('miel', 's1', true, 1, 'imagen_texto'), tr('miel', 's2', true, 2, 'imagen_estimulo')];
+    expect(wordStates(h).get('miel')!.level).toBe(1);
+  });
 });

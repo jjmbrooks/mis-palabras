@@ -19,7 +19,7 @@ service cloud.firestore {
         && d.childId is string && d.childId.size() <= 40
         && d.sessionId is string && d.sessionId.size() <= 40
         && d.word is string && d.word.size() >= 1 && d.word.size() <= 30
-        && d.cardType in ['imagen_texto', 'emparejar', 'solo_texto']
+        && d.cardType in ['imagen_estimulo', 'elegir_texto', 'leer', 'imagen_texto', 'emparejar', 'solo_texto']
         && d.help in ['ninguna', 'A', 'B', 'C']
         && d.correct is bool
         && d.latencyMs is int && d.latencyMs >= 0 && d.latencyMs <= 600000
