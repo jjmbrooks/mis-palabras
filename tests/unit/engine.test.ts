@@ -55,7 +55,7 @@ describe('dominio', () => {
     expect(wordStates(h).get('sol')!.mastered).toBe(true);
   });
   it('ayuda D12: ninguna → imagen + texto (B) → tutor (C)', () => { expect([nextHelp('ninguna'), nextHelp('B'), nextHelp('C')]).toEqual(['B','C','C']); });
-  it('CSV con cabecera y escape', () => { expect(toCSV([tr('miel','s',true,0)]).split('\n')[0]).toBe('childId,sessionId,word,cardType,help,correct,latencyMs,at'); });
+  it('CSV con cabecera y escape', () => { expect(toCSV([tr('miel','s',true,0)]).split('\n')[0]).toBe('childId,sessionId,word,cardType,help,correct,latencyMs,at,mode,helps'); });
 });
 
 describe('D12: solo texto por defecto', () => {
@@ -92,5 +92,70 @@ describe('D12: solo texto por defecto', () => {
   it('lee historiales anteriores a D12 (imagen_texto → imagen_estimulo, etc.)', () => {
     const h = [tr('miel', 's1', true, 1, 'imagen_texto'), tr('miel', 's2', true, 2, 'imagen_estimulo')];
     expect(wordStates(h).get('miel')!.level).toBe(1);
+  });
+});
+
+import { IndependentSession, progress, clampIndepMinutes, SessionRecord } from '../../src/engine';
+import { FACTS, rewardFact } from '../../src/facts';
+
+const masteredHist = (words: string[]) => words.flatMap(w => ['imagen_estimulo','imagen_estimulo','elegir_texto','elegir_texto','leer','leer']
+  .map((c, i) => tr(w, 'm' + i, true, i, c as TrialRecord['cardType'])));
+
+describe('D13: registro y progreso', () => {
+  const ses = (id: string, startedAt: number, mode: SessionRecord['mode'] = 'tutor'): SessionRecord =>
+    ({ id, childId: 'c', mode, deck: 'abejas-jardin', startedAt, endedAt: startedAt + 240000, durationMs: 240000, trials: 3 });
+  it('% al primer intento por palabra y ayudas por sesión, más reciente primero', () => {
+    const t = [tr('miel', 's1', true, 1), tr('miel', 's1', false, 2), tr('sol', 's1', true, 3), tr('sol', 's2', true, 4)];
+    t[1].helps = 2;
+    const p = progress([ses('s1', 10), ses('s2', 20)], t);
+    expect(p.map(x => x.session.id)).toEqual(['s2', 's1']);
+    const miel = p[1].words.find(w => w.word === 'miel')!;
+    expect(miel).toMatchObject({ trials: 2, firstTry: 1, pct: 50, helps: 2 });
+    expect(p[1].pct).toBe(67);
+    expect(p[1].session.durationMs).toBe(240000);
+  });
+  it('dominada con ≥90 % en 2 sesiones seguidas; la práctica sola no cuenta', () => {
+    const h = masteredHist(['sol']);
+    expect(wordStates(h).get('sol')!.mastered).toBe(true);
+    const solo = masteredHist(['miel']).map(t => ({ ...t, mode: 'independiente' as const }));
+    expect(wordStates(solo).get('miel')!.mastered).toBe(false);
+    expect(wordStates([tr('sol','a',true,1), tr('sol','b',false,2), tr('sol','c',true,3)]).get('sol')!.level).toBe(0);
+  });
+  it('CSV incluye modo y ayudas', () => {
+    expect(toCSV([{ ...tr('miel','s',true,0), mode: 'independiente', helps: 1 }]).split('\n')[1].endsWith(',independiente,1')).toBe(true);
+  });
+});
+
+describe('D13: modo independiente', () => {
+  it('sin palabras dominadas no está disponible', () => {
+    const s = new IndependentSession(wordStates([]), seeded(1));
+    expect(s.available).toBe(false); expect(s.next(0)).toBeNull();
+  });
+  it('solo pregunta palabras dominadas, con estímulo solo imagen y sin fase de enseñanza', () => {
+    const s = new IndependentSession(wordStates(masteredHist(['sol', 'miel', 'flor'])), seeded(7));
+    expect(s.words.sort()).toEqual(['flor', 'miel', 'sol']);
+    let t;
+    for (let i = 0; i < 20 && (t = s.next(0)); i++) {
+      expect(['sol', 'miel', 'flor']).toContain(t.word);
+      expect(t.cardType).toBe('imagen_estimulo'); expect(t.presentFirst).toBe(false);
+      expect(t.options).toContain(t.word); s.record(t, true);
+    }
+  });
+  it('dura de 3 a 5 minutos y se cierra sola al cumplirse', () => {
+    expect([clampIndepMinutes(1), clampIndepMinutes(4), clampIndepMinutes(9)]).toEqual([3, 4, 5]);
+    const s = new IndependentSession(wordStates(masteredHist(['sol', 'miel'])), seeded(2), 3);
+    expect(s.limitMs).toBe(180000);
+    expect(s.next(179999)).not.toBeNull();
+    expect(s.next(180000)).toBeNull();
+  });
+  it('tras un error repite la palabra sola', () => {
+    const s = new IndependentSession(wordStates(masteredHist(['sol', 'miel'])), seeded(3));
+    const t = s.next(0)!; s.record(t, false);
+    const r = s.next(1)!; expect(r.word).toBe(t.word); expect(r.repeat).toBe(true);
+  });
+  it('premio: un dato curioso de una palabra practicada; hay dato para todo el mazo', () => {
+    for (const w of DECK) expect(FACTS[w.id]).toBeTruthy();
+    expect(rewardFact(['rana'])!.word).toBe('rana');
+    expect(rewardFact([])).toBeNull();
   });
 });

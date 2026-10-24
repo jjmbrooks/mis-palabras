@@ -21,6 +21,23 @@ export interface TrialRecord {
   correct: boolean; // acierto al primer intento y sin ayuda
   latencyMs: number;
   at: number; // fecha y hora (ms epoch)
+  mode?: Mode; // D13; ausente en ensayos anteriores = tutor
+  helps?: number; // D13: cuántas ayudas se activaron en el ensayo
+}
+
+export type Mode = 'tutor' | 'independiente';
+export const DECK_ID = 'abejas-jardin';
+
+/** Registro de sesión (D13). Sin datos del niño más allá de su id aleatorio. */
+export interface SessionRecord {
+  id: string;
+  childId: string;
+  mode: Mode;
+  deck: string;
+  startedAt: number;
+  endedAt: number;
+  durationMs: number;
+  trials: number;
 }
 
 export const LEVELS: CardType[] = ['imagen_estimulo', 'elegir_texto', 'leer'];
@@ -35,7 +52,8 @@ export interface WordState { level: number; mastered: boolean }
 /** Nivel de apoyo de cada palabra a partir del historial (§5). */
 export function wordStates(history: TrialRecord[]): Map<string, WordState> {
   const out = new Map<string, WordState>();
-  const sorted = [...history].sort((a, b) => a.at - b.at);
+  // D5/D13: la práctica independiente no cuenta para el dominio.
+  const sorted = history.filter(t => t.mode !== 'independiente').sort((a, b) => a.at - b.at);
   for (const w of DECK) {
     const trials = sorted.filter(t => t.word === w.id);
     const sessions: string[] = [];
@@ -162,7 +180,64 @@ export class Session {
 export const nextHelp = (h: Help): Help => (h === 'ninguna' ? 'B' : 'C');
 
 export function toCSV(rows: TrialRecord[]): string {
-  const head = ['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at'];
+  const head = ['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps'];
   const esc = (v: unknown) => { const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  return [head.join(','), ...rows.map(r => [r.childId, r.sessionId, r.word, r.cardType, r.help, r.correct, r.latencyMs, new Date(r.at).toISOString()].map(esc).join(','))].join('\n');
+  return [head.join(','), ...rows.map(r => [r.childId, r.sessionId, r.word, r.cardType, r.help, r.correct, r.latencyMs, new Date(r.at).toISOString(), r.mode ?? 'tutor', r.helps ?? ''].map(esc).join(','))].join('\n');
+}
+
+// ---------- D13: progreso por sesión ----------
+
+export interface WordProgress { word: string; trials: number; firstTry: number; pct: number; helps: number }
+export interface SessionProgress { session: SessionRecord; words: WordProgress[]; pct: number }
+
+/** % de aciertos al primer intento (sin ayuda) por palabra en cada sesión, más reciente primero. */
+export function progress(sessions: SessionRecord[], trials: TrialRecord[]): SessionProgress[] {
+  return [...sessions].sort((a, b) => b.startedAt - a.startedAt).map(session => {
+    const ts = trials.filter(t => t.sessionId === session.id);
+    const ids = [...new Set(ts.map(t => t.word))];
+    const words = ids.map(word => {
+      const w = ts.filter(t => t.word === word); const ok = w.filter(t => t.correct).length;
+      return { word, trials: w.length, firstTry: ok, pct: Math.round((ok / w.length) * 100), helps: w.reduce((s, t) => s + (t.helps ?? (t.help === 'ninguna' ? 0 : 1)), 0) };
+    });
+    const ok = ts.filter(t => t.correct).length;
+    return { session, words, pct: ts.length ? Math.round((ok / ts.length) * 100) : 0 };
+  });
+}
+
+// ---------- D13: modo independiente ----------
+
+export const INDEP_MIN = 3, INDEP_MAX = 5;
+export const clampIndepMinutes = (m: number) => Math.min(INDEP_MAX, Math.max(INDEP_MIN, Math.round(m) || 4));
+
+/** Práctica sin tutor: solo palabras dominadas; sesión corta (3–5 min) que cierra sola. */
+export class IndependentSession {
+  readonly words: string[];
+  readonly limitMs: number;
+  private last = '';
+  private queue: TrialSpec[] = [];
+  count = 0;
+  constructor(states: Map<string, WordState>, private rng: Rng = Math.random, minutes = 4, readonly maxTrials = 30) {
+    this.words = DECK.map(w => w.id).filter(id => states.get(id)?.mastered);
+    this.limitMs = clampIndepMinutes(minutes) * 60_000;
+  }
+  get available() { return this.words.length > 0; }
+  private build(word: string, repeat = false): TrialSpec {
+    const n = this.words.length >= 6 ? 3 : 2;
+    // Distractores: otras palabras dominadas primero; si no alcanzan, del mazo (nunca parecidas).
+    const ok = (id: string) => id !== word && !similar(id, word);
+    const pool = [...shuffle(this.words.filter(ok), this.rng), ...shuffle(DECK.map(w => w.id).filter(id => ok(id) && !this.words.includes(id)), this.rng)];
+    return { word, cardType: 'imagen_estimulo', options: shuffle([word, ...pool.slice(0, n - 1)], this.rng), presentFirst: false, repeat };
+  }
+  /** null al agotar tiempo o ensayos, o si no hay palabras dominadas. */
+  next(elapsedMs: number): TrialSpec | null {
+    if (!this.available || elapsedMs >= this.limitMs || this.count >= this.maxTrials) return null;
+    const q = this.queue.shift(); if (q) { this.last = q.word; return q; }
+    let c = this.words.filter(w => w !== this.last); if (!c.length) c = this.words;
+    this.last = c[Math.floor(this.rng() * c.length)];
+    return this.build(this.last);
+  }
+  record(spec: TrialSpec, correct: boolean) {
+    this.count++;
+    if (!correct && !spec.repeat) this.queue.push(this.build(spec.word, true));
+  }
 }

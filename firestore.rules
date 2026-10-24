@@ -14,7 +14,7 @@ service cloud.firestore {
 
     // Ensayo: solo los campos mínimos de docs/mecanica-inicial.md §8.
     function validTrial(d) {
-      return d.keys().hasOnly(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at'])
+      return d.keys().hasOnly(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps'])
         && d.keys().hasAll(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at'])
         && d.childId is string && d.childId.size() <= 40
         && d.sessionId is string && d.sessionId.size() <= 40
@@ -23,7 +23,22 @@ service cloud.firestore {
         && d.help in ['ninguna', 'A', 'B', 'C']
         && d.correct is bool
         && d.latencyMs is int && d.latencyMs >= 0 && d.latencyMs <= 600000
-        && d.at is timestamp;
+        && d.at is timestamp
+        // D13 (opcionales para leer ensayos anteriores): modo y número de ayudas usadas.
+        && (!('mode' in d) || d.mode in ['tutor', 'independiente'])
+        && (!('helps' in d) || (d.helps is int && d.helps >= 0 && d.helps <= 10));
+    }
+
+    // Sesión (D13): solo inicio, fin, duración, modo, mazo y número de ensayos.
+    function validSession(d) {
+      return d.keys().hasOnly(['childId', 'mode', 'deck', 'startedAt', 'endedAt', 'durationMs', 'trials'])
+        && d.keys().hasAll(['childId', 'mode', 'deck', 'startedAt', 'endedAt', 'durationMs', 'trials'])
+        && d.childId is string && d.childId.size() <= 40
+        && d.mode in ['tutor', 'independiente']
+        && d.deck in ['abejas-jardin']
+        && d.startedAt is timestamp && d.endedAt is timestamp && d.endedAt >= d.startedAt
+        && d.durationMs is int && d.durationMs >= 0 && d.durationMs <= 3600000
+        && d.trials is int && d.trials >= 0 && d.trials <= 100;
     }
 
     match /families/{uid}/children/{childId} {
@@ -34,6 +49,11 @@ service cloud.firestore {
       allow read, delete: if isFamily(uid);
       allow create: if isFamily(uid) && validTrial(request.resource.data);
       // Los ensayos no se editan: solo se crean o se borran.
+    }
+    match /families/{uid}/sessions/{sessionId} {
+      allow read, delete: if isFamily(uid);
+      allow create: if isFamily(uid) && validSession(request.resource.data);
+      // Las sesiones no se editan: solo se crean o se borran.
     }
     match /{document=**} {
       allow read, write: if false;

@@ -7,6 +7,7 @@ const firebase = require('firebase/compat/app');
 let env;
 const now = () => firebase.firestore.Timestamp.now();
 const trial = () => ({ childId: 'k1', sessionId: 's1', word: 'miel', cardType: 'imagen_estimulo', help: 'ninguna', correct: true, latencyMs: 1200, at: now() });
+const sess = () => ({ childId: 'k1', mode: 'independiente', deck: 'abejas-jardin', startedAt: now(), endedAt: now(), durationMs: 240000, trials: 8 });
 const kid = () => ({ nickname: 'Abejita', createdAt: now() });
 const fam = uid => env.authenticatedContext(uid).firestore();
 
@@ -72,6 +73,33 @@ describe('firestore.rules', () => {
     const left = await a.collection('families/famA/trials').get();
     if (left.size !== 1 || left.docs[0].data().childId !== 'k2') throw new Error('se borró de más');
     if (!(await a.doc('families/famA/children/k2').get()).exists) throw new Error('se borró otro perfil');
+  });
+  it('D13: la familia crea y lee sus sesiones; ensayos con modo y ayudas', async () => {
+    const db = fam('famA');
+    await assertSucceeds(db.doc('families/famA/sessions/s1').set(sess()));
+    await assertSucceeds(db.collection('families/famA/sessions').where('childId', '==', 'k1').get());
+    await assertSucceeds(db.doc('families/famA/trials/t9').set({ ...trial(), mode: 'independiente', helps: 1 }));
+    await assertFails(db.doc('families/famA/sessions/s1').update({ trials: 9 }));
+    await assertSucceeds(db.doc('families/famA/sessions/s1').delete());
+  });
+  it('D13: otra familia no ve ni escribe sesiones ajenas', async () => {
+    await env.withSecurityRulesDisabled(c => c.firestore().doc('families/famA/sessions/s1').set(sess()));
+    const b = fam('famB');
+    await assertFails(b.doc('families/famA/sessions/s1').get());
+    await assertFails(b.collection('families/famA/sessions').get());
+    await assertFails(b.collectionGroup('sessions').get());
+    await assertFails(b.doc('families/famA/sessions/s2').set(sess()));
+    await assertFails(env.unauthenticatedContext().firestore().doc('families/famA/sessions/s1').get());
+  });
+  it('D13: rechaza sesiones y ensayos inválidos', async () => {
+    const db = fam('famA');
+    await assertFails(db.doc('families/famA/sessions/s1').set({ ...sess(), nickname: 'x' }));
+    await assertFails(db.doc('families/famA/sessions/s1').set({ ...sess(), mode: 'otro' }));
+    await assertFails(db.doc('families/famA/sessions/s1').set({ ...sess(), deck: 'x' }));
+    await assertFails(db.doc('families/famA/sessions/s1').set({ ...sess(), durationMs: 3600001 }));
+    await assertFails(db.doc('families/famA/sessions/s1').set({ ...sess(), startedAt: firebase.firestore.Timestamp.fromMillis(Date.now() + 1e6) }));
+    await assertFails(db.doc('families/famA/trials/t1').set({ ...trial(), mode: 'x' }));
+    await assertFails(db.doc('families/famA/trials/t1').set({ ...trial(), helps: 11 }));
   });
   it('todo lo demás está negado', async () => {
     const db = fam('famA');

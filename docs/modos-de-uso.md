@@ -22,6 +22,7 @@ Varias ideas de este documento (los dos modos de uso, los tipos de carta, los ma
 | D8. Juegos sin error en explorar | Evidencia |
 | D9. Límite de tiempo y aviso de cierre | Evidencia + guía AAP |
 | D10. Diseño sensorial tranquilo, sin anuncios ni compras | Evidencia + inferencia |
+| D13. Registro de sesiones y modo independiente | Evidencia + inferencia |
 | D11. Mazos temáticos con personajes propios | Evidencia + criterio legal |
 
 ---
@@ -105,6 +106,36 @@ En los juegos («¿Dónde dice MIEL?») no se pierde. Si el niño duda, la app a
 
 **Criterio legal (no evidencia científica).** En una app pública solo se usan personajes e imágenes originales, genéricos o con licencia libre, porque los personajes comerciales tienen derechos de autor. Las familias pueden usar sus propias tarjetas impresas en casa.
 
+## D13. Registro de sesiones y modo independiente
+
+> Decisión de Diversa, **pendiente de aprobación de Brooks**. El modo independiente es la primera versión del modo «explorar» de D1: hereda D4, D5 y D8.
+
+### D13.1 Registro de sesión en los dos modos
+
+- Por sesión se guarda: **inicio, fin, duración, modo** (tutor o independiente), **mazo** y número de ensayos (`families/{uid}/sessions/{id}`).
+- Por ensayo se guarda, además de lo de mecanica-inicial §8: si **acertó al primer intento** sin ayuda, **cuántas ayudas** usó (`helps`) y el **modo**.
+- El panel del tutor muestra las **sesiones** (fecha, modo, duración) y el **% de aciertos al primer intento por palabra** en cada una, con las ayudas usadas.
+- Una palabra queda **dominada** con **≥ 90 % al primer intento en 2 sesiones seguidas** con tutor.
+
+**Por qué.** Las decisiones de ayuda y dominio se toman con datos ensayo por ensayo, y el criterio de 90 % da mejor mantenimiento que criterios más bajos (Fuller y Fienup, 2018; evidencia §2). La duración por sesión permite al tutor revisar el límite de tiempo (D9; AAP, 2016). La práctica independiente se registra pero **no cuenta para el dominio**, por las razones de D5.
+
+### D13.2 Modo independiente
+
+| Decisión | Por qué |
+|---|---|
+| **Solo palabras ya dominadas** con el tutor. Si no hay ninguna, el botón «Practicar solo» no aparece. | Sin un adulto que ayude antes del error, una palabra nueva aumentaría los errores, y los errores repetidos pueden aprenderse (Mueller et al., 2007; D4). La práctica después del dominio ayuda a conservar lo aprendido (Fuller y Fienup, 2018). |
+| **Sesión de 3 a 5 min** (4 por defecto, ajustable por el tutor) que **se cierra sola**. | **Práctica distribuida:** repartir la práctica en sesiones cortas y espaciadas da mejor retención que concentrarla en una sola sesión larga (Cepeda et al., 2006, metaanálisis de 317 experimentos). *Inferencia de diseño:* la cifra de 3–5 min es prudente para esta edad y para usar la app sin compañía (D9; AAP, 2016). |
+| Estímulo **solo imagen** y opciones **escritas**, como el primer nivel de D12. Ante un error o el botón «Ayuda» se muestra la carta imagen + texto, solo queda activa la opción correcta (ayuda sin error) y después se repite la palabra sola. | Sin tutor no hay quien diga la palabra ni quien evalúe la lectura en voz alta. La ayuda sin error evita practicar el error (Mueller et al., 2007; D8). Imagen → texto (Fossett y Mirenda, 2006; mecanica-inicial §2.1). |
+| **El audio suena solo después de responder.** | Si sonara antes, daría la respuesta (D3, D12). |
+| **Premio final tipo libro interactivo:** carta grande de una palabra practicada con un **dato curioso**, que suena al tocarla, más un sonido suave. | Reforzadores naturales y ligados a la tarea (Koegel et al., 1987a); el valor de una app tipo libro interactivo con sonidos (Hirsh-Pasek et al., 2015; D1). El premio llega al final para no competir con el texto (Buckley y Bird, 1993). |
+
+### D13.3 Privacidad
+
+- Los datos solo se guardan en la **cuenta familiar**: `families/{uid}/…`, con reglas de Firestore por cuenta. Solo ese `uid` lee, crea o borra. Las sesiones y los ensayos no se editan. Se rechazan los campos extra, y cualquier ruta o listado entre familias se niega. Hay pruebas en el emulador (`tests/rules`).
+- Las sesiones guardan solo tiempos, modo, mazo y número de ensayos: **sin nombre, apodo, fotos ni audio**. Se borran con «Borrar este perfil» y con «Borrar todo», y se incluyen en la exportación.
+- «Probar sin cuenta» no guarda nada. El repositorio no contiene datos. La siembra de ejemplo para capturas (`?semilla`) solo existe en desarrollo y se elimina del build.
+- El ajuste de minutos de la práctica sola se guarda en el dispositivo.
+
 ---
 
 ## Referencias
@@ -112,6 +143,7 @@ En los juegos («¿Dónde dice MIEL?») no se pierde. Si el niño duda, la app a
 - American Academy of Pediatrics, Council on Communications and Media. (2016). Media and young minds. *Pediatrics, 138*(5), e20162591. https://doi.org/10.1542/peds.2016-2591
 - Browder, D. M., Ahlgrim-Delzell, L., Spooner, F., Mims, P. J., & Baker, J. N. (2009). Using time delay to teach literacy to students with severe developmental disabilities. *Exceptional Children, 75*(3), 343–364. https://doi.org/10.1177/001440290907500305
 - Buckley, S., & Bird, G. (1993). Teaching children with Down syndrome to read. *Down Syndrome Research and Practice, 1*(1), 34–39. https://doi.org/10.3104/perspectives.9
+- Cepeda, N. J., Pashler, H., Vul, E., Wixted, J. T., & Rohrer, D. (2006). Distributed practice in verbal recall tasks: A review and quantitative synthesis. *Psychological Bulletin, 132*(3), 354–380. https://doi.org/10.1037/0033-2909.132.3.354
 - Dettmer, S., Simpson, R. L., Myles, B. S., & Ganz, J. B. (2000). The use of visual supports to facilitate transitions of students with autism. *Focus on Autism and Other Developmental Disabilities, 15*(3), 163–169. https://doi.org/10.1177/108835760001500307
 - Dunlap, G., DePerczel, M., Clarke, S., Wilson, D., Wright, S., White, R., & Gomez, A. (1994). Choice making to promote adaptive behavior for students with emotional and behavioral challenges. *Journal of Applied Behavior Analysis, 27*(3), 505–518. https://doi.org/10.1901/jaba.1994.27-505
 - El Zein, F., Solis, M., Vaughn, S., & McCulley, L. (2014). Reading comprehension interventions for students with autism spectrum disorders: A synthesis of research. *Journal of Autism and Developmental Disorders, 44*(6), 1303–1322. https://doi.org/10.1007/s10803-013-1989-2
