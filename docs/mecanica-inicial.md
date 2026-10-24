@@ -28,7 +28,7 @@ Especificación de la mecánica del producto mínimo viable de Mis Palabras. Cad
 - **Fossett y Mirenda (2006)**, *Research in Developmental Disabilities, 27*(4), 411–429, con 2 niños con discapacidades del desarrollo: emparejar **imagen → texto** (el texto es la respuesta) fue más eficaz que presentar el dibujo y la palabra juntos (pares asociados). Por eso hay una carta solo imagen como estímulo, con palabras escritas como opciones.
 - **Límites:** las muestras son muy pequeñas (6 y 2 participantes) y no son específicamente niños con síndrome de Down ni autismo. Es evidencia directa del mecanismo pero de alcance limitado; se suma a la cautela ya registrada en evidencia §3 (Buckley y Bird, 1993).
 
-> **Nota de cita:** el encargo citó «Didden et al., 2006, *Research in Developmental Disabilities* 27(4)». Al verificarlo, ese número corresponde a **Fossett y Mirenda (2006)**; el estudio de Didden sobre el bloqueo es de **2000** (*Journal of Applied Behavior Analysis*). Aquí se citan los dos con sus datos reales. Falta añadirlos a evidencia.md §4.
+> **Nota de cita:** el encargo citó «Didden et al., 2006, *Research in Developmental Disabilities* 27(4)». Al verificarlo, ese número corresponde a **Fossett y Mirenda (2006)**; el estudio de Didden sobre el bloqueo es de **2000** (*Journal of Applied Behavior Analysis*). Aquí se citan los dos con sus datos reales.
 
 ## 3. Flujo de una carta, paso a paso
 
@@ -154,7 +154,7 @@ Se registra solo lo necesario para decidir dominio y ayudas:
 
 ## Referencias
 
-Añadidas por D12 (verificadas; pendientes de pasar a evidencia.md §4):
+Añadidas por D12 (también en [evidencia.md §4](evidencia.md#4-referencias-apa-7)):
 
 - Didden, R., Prinsen, H., y Sigafoos, J. (2000). The blocking effect of pictorial prompts on sight-word reading. *Journal of Applied Behavior Analysis, 33*(3), 317–320. https://doi.org/10.1901/jaba.2000.33-317
 - Fossett, B., y Mirenda, P. (2006). Sight word reading in children with developmental disabilities: A comparison of paired associate and picture-to-text matching instruction. *Research in Developmental Disabilities, 27*(4), 411–429. https://doi.org/10.1016/j.ridd.2005.05.006
