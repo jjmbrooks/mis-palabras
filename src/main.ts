@@ -103,6 +103,7 @@ async function tutorPanel() {
     <section class="panel"><h2>Tus datos</h2>
       <div class="row"><button class="btn" id="xj">Exportar JSON</button><button class="btn" id="xc">Exportar CSV</button></div>
       ${s.demo ? '' : '<button class="btn" id="out">Cerrar sesión</button>'}
+      ${child ? `<button class="btn danger" id="delkid">Borrar este perfil (${esc(child.nickname)})</button>` : ''}
       <button class="btn danger" id="del">${s.demo ? 'Borrar datos de prueba' : 'Borrar todos los datos y la cuenta'}</button>
       <p class="small">Se guardan solo: palabra, tipo de carta, ayuda, acierto, tiempo de respuesta y fecha. El niño se identifica con un apodo.</p>
     </section>
@@ -118,6 +119,15 @@ async function tutorPanel() {
   $('#xj').onclick = async () => dl('mis-palabras.json', JSON.stringify(await s.exportAll(), null, 2), 'application/json');
   $('#xc').onclick = async () => dl('mis-palabras.csv', toCSV((await s.exportAll()).trials), 'text/csv');
   $('#out') && ($('#out').onclick = async () => { await s.signOut(); store = null; child = null; login(); });
+  $('#delkid') && ($('#delkid').onclick = async () => {
+    const k = child!;
+    if (!confirm(`Se borrará el perfil «${k.nickname}» con todos sus ensayos y su progreso. Los demás perfiles y la cuenta no se tocan. No se puede deshacer. ¿Continuar?`)) return;
+    try {
+      $('#delkid').textContent = 'Borrando…';
+      await s.deleteChild(k.id);
+      child = null; home();
+    } catch { alert('No se pudo borrar el perfil. Revisa tu conexión e intenta de nuevo.'); tutorPanel(); }
+  });
   $('#del').onclick = async () => {
     if (!confirm(s.demo ? '¿Borrar los datos de prueba?' : 'Se borrarán todos los datos de tu familia y tu cuenta. No se puede deshacer. ¿Continuar?')) return;
     try {

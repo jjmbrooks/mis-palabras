@@ -52,6 +52,27 @@ describe('firestore.rules', () => {
     await db.doc('families/famA/trials/t1').set(trial());
     await assertFails(db.doc('families/famA/trials/t1').update({ correct: false }));
   });
+  it('borrar un perfil: solo el dueño borra el niño y sus ensayos; otros perfiles quedan', async () => {
+    await env.withSecurityRulesDisabled(async c => {
+      const d = c.firestore();
+      await d.doc('families/famA/children/k1').set(kid());
+      await d.doc('families/famA/children/k2').set(kid());
+      await d.doc('families/famA/trials/t1').set(trial());
+      await d.doc('families/famA/trials/t2').set({ ...trial(), childId: 'k2' });
+    });
+    const b = fam('famB');
+    await assertFails(b.doc('families/famA/children/k1').delete());
+    await assertFails(b.collection('families/famA/trials').where('childId', '==', 'k1').get());
+    const a = fam('famA');
+    const q = await assertSucceeds(a.collection('families/famA/trials').where('childId', '==', 'k1').get());
+    const batch = a.batch();
+    q.docs.forEach(d => batch.delete(d.ref));
+    batch.delete(a.doc('families/famA/children/k1'));
+    await assertSucceeds(batch.commit());
+    const left = await a.collection('families/famA/trials').get();
+    if (left.size !== 1 || left.docs[0].data().childId !== 'k2') throw new Error('se borró de más');
+    if (!(await a.doc('families/famA/children/k2').get()).exists) throw new Error('se borró otro perfil');
+  });
   it('todo lo demás está negado', async () => {
     const db = fam('famA');
     await assertFails(db.doc('families/famA').set({ a: 1 }));
