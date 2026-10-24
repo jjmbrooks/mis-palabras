@@ -1,0 +1,3 @@
+{ "name": "Mis Palabras", "short_name": "Mis Palabras", "lang": "es-MX", "start_url": "./", "scope": "./",
+  "display": "standalone", "background_color": "#fdf8ec", "theme_color": "#fdf8ec",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }] }

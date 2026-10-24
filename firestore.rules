@@ -1,0 +1,42 @@
+rules_version = '2';
+// Cada familia (uid de Google) solo puede leer y escribir su propio árbol. Todo lo demás se niega,
+// incluido cualquier listado entre familias. Nadie (ni el administrador desde la app) ve datos ajenos.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isFamily(uid) { return request.auth != null && request.auth.uid == uid; }
+
+    // Niño: solo un apodo corto (nunca nombre real, que la app pide explícitamente no usar).
+    function validChild(d) {
+      return d.keys().hasOnly(['nickname', 'createdAt']) && d.keys().hasAll(['nickname', 'createdAt'])
+        && d.nickname is string && d.nickname.size() >= 1 && d.nickname.size() <= 20
+        && d.createdAt is timestamp;
+    }
+
+    // Ensayo: solo los campos mínimos de docs/mecanica-inicial.md §8.
+    function validTrial(d) {
+      return d.keys().hasOnly(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at'])
+        && d.keys().hasAll(['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at'])
+        && d.childId is string && d.childId.size() <= 40
+        && d.sessionId is string && d.sessionId.size() <= 40
+        && d.word is string && d.word.size() >= 1 && d.word.size() <= 30
+        && d.cardType in ['imagen_texto', 'emparejar', 'solo_texto']
+        && d.help in ['ninguna', 'A', 'B', 'C']
+        && d.correct is bool
+        && d.latencyMs is int && d.latencyMs >= 0 && d.latencyMs <= 600000
+        && d.at is timestamp;
+    }
+
+    match /families/{uid}/children/{childId} {
+      allow read, delete: if isFamily(uid);
+      allow create, update: if isFamily(uid) && validChild(request.resource.data);
+    }
+    match /families/{uid}/trials/{trialId} {
+      allow read, delete: if isFamily(uid);
+      allow create: if isFamily(uid) && validTrial(request.resource.data);
+      // Los ensayos no se editan: solo se crean o se borran.
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

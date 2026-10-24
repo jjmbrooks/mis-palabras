@@ -5,6 +5,8 @@
 | [evidencia.md](evidencia.md) | Base de evidencia: principios de diseño pedagógico, fuentes revisadas por pares, limitaciones y referencias APA 7. |
 | [modos-de-uso.md](modos-de-uso.md) | Modos de uso (con tutor y explorar), tipos de carta, reglas de audio y el porqué de cada decisión de diseño. |
 | [mecanica-inicial.md](mecanica-inicial.md) | Mecánica del MVP: modo con tutor, flujo de carta, ayuda graduada, sesión, dominio, primer mazo, criterios sensoriales y datos por ensayo. |
+| [ARQUITECTURA.md](ARQUITECTURA.md) | Cómo está construida la app (MVP Modo con tutor): módulos, mecánica implementada, sin conexión, arte y audio provisionales, despliegue. |
+| [PRIVACIDAD-TECNICA.md](PRIVACIDAD-TECNICA.md) | Cómo el código cumple los requisitos de privacidad: reglas, datos guardados, exportar y borrar. |
 
 ## Cómo proponer correcciones
 

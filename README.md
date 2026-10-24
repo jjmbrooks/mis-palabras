@@ -2,7 +2,7 @@
 
 App web gratuita y de código abierto para practicar lectura con mazos de cartas de palabras de varias temáticas, pensada para que la usen familias.
 
-> **Estado:** en definición. Todavía no hay código; la mecánica se está diseñando. La documentación de diseño y evidencia vivirá en [`docs/`](docs/).
+> **Estado:** MVP del Modo con tutor. App: https://jjmbrooks.github.io/mis-palabras/ · Diseño y evidencia en [`docs/`](docs/).
 
 ## Requisitos de privacidad (no negociables)
 

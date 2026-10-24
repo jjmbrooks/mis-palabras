@@ -1,0 +1,28 @@
+{
+  "name": "mis-palabras",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run tests/unit",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-mis-palabras \"node --test tests/rules/\""
+  },
+  "dependencies": {
+    "firebase": "^12.19.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase-tools": "^15.34.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^4.1.12"
+  },
+  "overrides": {
+    "@firebase/app-compat": "0.5.20",
+    "@firebase/app": "0.16.4"
+  }
+}
