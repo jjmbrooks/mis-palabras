@@ -18,8 +18,7 @@ Especificación de la mecánica del producto mínimo viable de Mis Palabras. Cad
 | Carta | Uso | Por qué |
 |---|---|---|
 | Imagen + texto | Solo **enseñanza** (presentación §3.1, que puede omitirse) y **ayuda** (§3.4). Nunca es el estímulo de un ensayo que cuente. | Con la imagen siempre visible el niño responde a la imagen y no al texto (Didden et al., 2000; ver §2.1). La imagen puede eclipsar la palabra si nunca se retira (Buckley y Bird, 1993; evidencia §3). |
-| Solo imagen como estímulo (`imagen_estimulo`) | El niño ve el dibujo y **elige entre 2–3 palabras escritas**. Primer nivel. | Emparejar imagen con texto, con el texto como respuesta, enseñó mejor que presentar imagen y palabra juntas (Fossett y Mirenda, 2006; ver §2.1). Además comprueba el significado: reconocer no es comprender (El Zein et al., 2014; evidencia §3). |
-| Solo texto, elegir (`elegir_texto`) | La app dice «Toca donde dice ABEJA» y el niño la **elige entre 2–3 palabras escritas** (D14). | Discriminación entre pocas opciones en ensayos discretos (Spector, 2011; evidencia §2). |
+| Elegir (`elegir_texto`, D15) | Se ve **el dibujo**, la app dice «Toca donde dice ABEJA» y el niño **elige entre 2–3 palabras escritas**. Primer nivel. | Discriminación entre pocas opciones en ensayos discretos (Spector, 2011; evidencia §2). El dibujo motiva y da significado (El Zein et al., 2014; evidencia §3); la lectura la garantiza que la respuesta sea siempre una palabra escrita (§3.7). |
 | Solo texto, leer (`leer`) | El niño **lee en voz alta** la palabra escrita, sola; el tutor marca «Leyó bien» o «Aún no». Último nivel. | Meta del desvanecimiento (Buckley y Bird, 1993; evidencia §2 y §3). |
 
 ### 2.1 Por qué solo texto por defecto (bloqueo por la imagen)
@@ -34,7 +33,7 @@ Especificación de la mecánica del producto mínimo viable de Mis Palabras. Cad
 
 ### 3.1 Presentación (enseñar)
 
-> **Se omite** si el tutor marcó que el niño **ya conoce los dibujos** (ajuste por mazo y por niño; el del niño manda). Tampoco se muestra en la repetición tras una ayuda.
+> **D15: ya no se muestra antes de los ensayos.** El dibujo acompaña cada ensayo de elegir, y una carta imagen + texto previa daría la respuesta. La carta imagen + texto queda como **Ayuda** (§3.4).
 
 1. Se muestra la carta **imagen + texto**, grande y sola en pantalla.
 2. Suena la palabra (voz natural y pausada). El tutor puede repetirla tocando la carta.
@@ -44,17 +43,17 @@ Especificación de la mecánica del producto mínimo viable de Mis Palabras. Cad
 
 ### 3.2 Ensayo (preguntar o leer)
 
-1. **La app lee en voz alta la instrucción** del ensayo (D14, §3.6), en el modo tutor y en el modo solo. Hay un botón grande 🔊 para repetirla. El estímulo es el dibujo solo (`imagen_estimulo`), la palabra hablada (`elegir_texto`) o la palabra escrita sola (`leer`).
+1. **La app lee en voz alta la instrucción** del ensayo (D14, §3.6), en el modo tutor y en el modo solo. Hay un botón grande 🔊 para repetirla. En `elegir_texto` se ve el dibujo y se oye la palabra (D15); en `leer` solo está la palabra escrita.
 2. Aparecen las opciones: **2 al inicio, 3 después** (cuando la palabra supera el 80 % de aciertos en una sesión; *inferencia de diseño* para el umbral).
 3. La posición de las opciones se **mezcla en cada intento**.
 4. Las opciones se habilitan tras una **breve demora** (≈1 s) para evitar toques impulsivos.
-5. Las opciones son **solo palabras escritas**, sin dibujo. En `leer` e `imagen_estimulo` **la palabra meta no suena antes de responder**; suena **después**, como confirmación. En `elegir_texto` la palabra hablada es el estímulo (§3.6).
+5. Las opciones son **solo palabras escritas**, sin dibujo. En `leer` **la palabra meta no suena antes de responder**; suena **después**, como confirmación. En `elegir_texto` la palabra hablada es el estímulo (§3.6).
 
 **Por qué:**
 - Discriminación entre 2–4 opciones en ensayos discretos (Spector, 2011; Steinbrenner et al., 2020; evidencia §2). Los distractores parecidos se introducen después (Buckley y Bird, 1993).
 - Posición aleatoria: *inferencia de diseño* ya señalada en evidencia §2, para evitar aciertos por lugar.
 - Demora antes de habilitar: *inferencia de diseño* (evitar el tocar al azar).
-- La palabra solo suena después de responder en `leer` e `imagen_estimulo`: si sonara antes, daría la respuesta (D3, D12, D14). El dibujo como retroalimentación tras responder funcionó en algunos alumnos (Didden et al., 2000).
+- La palabra solo suena después de responder en `leer`: si sonara antes, daría la respuesta (D3, D12, D14). El dibujo como retroalimentación tras responder funcionó en algunos alumnos (Didden et al., 2000).
 
 ### 3.3 Acierto
 
@@ -82,29 +81,42 @@ Después de una respuesta con ayuda, **se repite la palabra sola**, sin imagen n
 
 **Por qué:** aprendizaje sin error y demora de tiempo (Mueller et al., 2007; Browder et al., 2009; evidencia §2). Estos niños tienen dificultad para corregir respuestas erróneas y son sensibles al fracaso (Buckley y Bird, 1993). El emparejamiento palabra-palabra es el paso intermedio de la secuencia emparejar → seleccionar → nombrar (Buckley y Bird, 1993). Corrección con modelo (Fuller y Fienup, 2018). *Inferencia de diseño:* intercalar una palabra conocida y el umbral de 3–5 s.
 
-### 3.5 Variante «ya conoce los dibujos» (D12.5)
+### 3.5 Variante «ya conoce los dibujos» (D12.5, retirada en D15)
 
-Ajuste del tutor **por mazo** («Abejas y jardín: ya conoce los dibujos») y **por niño** (como el mazo / ya conoce / enseñar con imagen + texto). Si está activo, se salta la fase de enseñanza imagen + texto (§3.1) y se empieza directamente con ensayos de solo texto. Se guarda solo en el dispositivo, sin datos nuevos en la nube.
-
-**Por qué:** la imagen puede eclipsar la palabra (Buckley y Bird, 1993; evidencia §3); empezar con palabras que el niño ya comprende (Buckley y Bird, 1993; evidencia §2). *Inferencia de diseño:* ofrecerla como opción para comparar qué funciona mejor con cada niño, con los datos de registro.
+Era un ajuste por mazo y por niño para saltar la carta de enseñanza imagen + texto. Desde D15 esa carta ya no se presenta antes de los ensayos (§3.1), así que el ajuste desaparece. Los valores guardados en el dispositivo se ignoran.
 
 ### 3.6 Instrucción hablada (D14)
 
 | Tipo de ensayo | Se dice en voz alta | Texto visible | ¿Nombra la palabra meta? |
 |---|---|---|---|
 | `leer` | «¿Qué dice aquí?» | «¿Qué dice aquí?» | **No** |
-| `imagen_estimulo` (dibujo → palabra) | «Toca la palabra de este dibujo.» | igual | **No** |
-| `elegir_texto` | «Toca donde dice ABEJA» | «Toca donde dice…» | **Sí, solo hablada** |
+| `elegir_texto` (con dibujo, D15) | «Toca donde dice ABEJA» | «Toca donde dice…» | **Sí, solo hablada** |
 
 - Se lee al empezar cada ensayo, en el modo tutor y en el modo solo. Un **botón grande 🔊** la repite. Las opciones se habilitan cuando termina la instrucción, con la demora mínima de ≈1 s.
 - La voz es la que ya usa la app (`speechSynthesis` con una voz es-MX si existe; si no, Web Speech en `es-MX`), con el mismo volumen limitado.
 - El único texto visible es la frase corta. Desaparecen «Escucha al tutor» y el botón de «mantén presionado».
 
 **Por qué.**
-- **`leer` e `imagen_estimulo` no nombran la palabra.** Es el mismo principio de D12, el **bloqueo de estímulo**. Si la instrucción dijera la palabra, el niño podría responder al sonido o al dibujo ya conocido y no al texto, y el acierto no demostraría lectura (Didden et al., 2000; Fossett y Mirenda, 2006; §2.1). Por eso la instrucción es neutra, y la palabra suena solo después de responder, como confirmación (D3).
+- **`leer` no nombra la palabra.** Es el mismo principio de D12, el **bloqueo de estímulo**. Si la instrucción dijera la palabra, el niño podría repetir el sonido sin leer el texto, y el acierto no demostraría lectura (Didden et al., 2000; Fossett y Mirenda, 2006; §2.1). Por eso la instrucción es neutra, y la palabra suena solo después de responder, como confirmación (D3).
 - **`elegir_texto` sí nombra la palabra.** Ahí la tarea es justo **emparejar la palabra hablada con la escrita**, la base de la enseñanza sistemática de palabras a la vista (Browder et al., 2009; Spector, 2011; evidencia §2). El sonido es el estímulo y el texto la respuesta, así que no compite con el texto. Por eso el texto visible no la repite («Toca donde dice…»): si apareciera escrita, el niño podría emparejar letras con letras sin escuchar.
 - **Instrucción hablada y botón para repetirla:** el niño no necesita leer la consigna, y en el modo solo no hay adulto que la diga. *Inferencia de diseño.*
-- **Prueba automática:** `tests/unit` comprueba que en `leer` e `imagen_estimulo` ninguna instrucción, ni hablada ni visible, contiene la palabra meta para todo el mazo, y que en `elegir_texto` la palabra solo va en la frase hablada.
+- **Prueba automática:** `tests/unit` comprueba que en `leer` ninguna instrucción, ni hablada ni visible, contiene la palabra meta para todo el mazo, y que en `elegir_texto` la palabra solo va en la frase hablada.
+
+### 3.7 Pantalla sin scroll, dibujo con la palabra dicha (D15)
+
+> **Decisión D15 (Diversa), tras una prueba de Brooks:** en la pantalla de MIEL la palabra salía cortada y AGUA quedaba abajo, con scroll.
+
+1. **Sin scroll.** La pantalla de ensayo mide `100dvh` y no se desplaza. Hay 2 o 3 opciones, apiladas y todas visibles. Las tarjetas se reparten la altura libre y el dibujo se encoge en pantallas bajas.
+2. **Texto ajustado al ancho.** Cada palabra calcula su tamaño con el ancho de su tarjeta (`cqi`) y su número de letras (`--n`), con un tope. Así ninguna palabra se corta, MARIPOSA incluida.
+3. **Ensayo por defecto:** se ve el dibujo, la voz dice «Toca donde dice MIEL» (D14, botón 🔊) y el niño elige entre 2–3 palabras escritas. Tras acertar queda solo la palabra correcta junto al dibujo.
+4. **Se elimina el ensayo dibujo → palabra (`imagen_estimulo`)** como tipo aparte, junto con la frase «Toca la palabra de este dibujo» y cualquier opción por niño. Niveles: `elegir_texto` → `leer` (§5).
+5. **Migración de historiales:** los ensayos `imagen_estimulo` e `imagen_texto` cuentan como `elegir_texto`, porque en ambos el niño ve el dibujo y elige entre palabras escritas. `emparejar` → `elegir_texto` y `solo_texto` → `leer`. No se borra ni reescribe nada en la nube; la equivalencia se aplica al leer. Una palabra que ya había pasado el nivel de dibujo queda en `elegir_texto` o más arriba, según sus ensayos.
+
+**Por qué.**
+- **Dibujo y palabra dicha juntos.** Brooks pidió conservar el dibujo porque motiva al niño. Con la palabra dicha, el dibujo ya no es la clave de la respuesta: el niño sabe qué palabra buscar por la voz y tiene que encontrarla **entre palabras escritas**. Esa elección es la práctica de lectura (emparejar palabra hablada con palabra escrita; Browder et al., 2009; Spector, 2011; evidencia §2).
+- **Por qué se quita el ensayo dibujo → palabra.** Si el niño ya conoce el referente, ese ensayo no añade práctica de lectura respecto de `elegir_texto`, y le deja adivinar por pistas irrelevantes, como la longitud de la palabra (SOL frente a MARIPOSA) o la primera letra. Los distractores parecidos (§2 y Buckley y Bird, 1993) reducen esas pistas, pero no hacen que el dibujo aporte lectura. *Inferencia de diseño*, apoyada en el control de estímulos de §2.1 (Didden et al., 2000; Fossett y Mirenda, 2006).
+- **Sin scroll y sin cortes.** Una opción fuera de pantalla o una palabra cortada cambia la tarea: el niño no puede comparar todas las opciones, y la palabra cortada ya no es la palabra. *Inferencia de diseño.*
+- **Pruebas:** `tests/unit` (niveles, migración e instrucciones) y `npm run test:layout` (`tests/e2e/layout.mjs`). Este último recorre ensayos reales en 360×640 y 412×915 y comprueba que no hay scroll, que ningún control queda fuera de pantalla y que ninguna palabra se desborda. Lo hace también con MARIPOSA en todas las opciones, con la Ayuda abierta y tras un acierto.
 
 ## 4. Sesión
 
@@ -120,7 +132,7 @@ Ajuste del tutor **por mazo** («Abejas y jardín: ya conoce los dibujos») y **
 | Decisión | Por qué |
 |---|---|
 | Una palabra se domina con **≥ 90 % de aciertos al primer intento, sin ayuda, en 2 sesiones seguidas**. | Mejor retención con criterio de 90 % (Fuller y Fienup, 2018; evidencia §2). Las sesiones consecutivas son práctica común poco estudiada. |
-| Orden de niveles (D12): **dibujo → elegir palabra escrita** (`imagen_estimulo`) → **elegir palabra dicha por el tutor** (`elegir_texto`) → **leer la palabra sola** (`leer`). La imagen + texto ya no es un nivel, solo ayuda. | Retiro de apoyos de evidencia §2 (Browder et al., 2006; Spector, 2011; Buckley y Bird, 1993), ajustado por el bloqueo de la imagen (Didden et al., 2000; Fossett y Mirenda, 2006). Historiales anteriores se leen por equivalencia (imagen_texto → 1.º, emparejar → 2.º, solo_texto → 3.º). |
+| Orden de niveles (D15): **dibujo + «Toca donde dice…», elegir entre palabras escritas** (`elegir_texto`) → **leer la palabra sola** (`leer`). La imagen + texto ya no es un nivel, solo ayuda. | Retiro de apoyos de evidencia §2 (Browder et al., 2006; Spector, 2011; Buckley y Bird, 1993), ajustado por el bloqueo de la imagen (Didden et al., 2000; Fossett y Mirenda, 2006). Historiales anteriores se leen por equivalencia (imagen_estimulo, imagen_texto y emparejar → 1.º; solo_texto → 2.º; §3.7). |
 | Se pasa al nivel siguiente al cumplir el criterio en el nivel actual. | *Inferencia de diseño* basada en el criterio anterior. |
 | Si una palabra queda **por debajo de ≈60 % en 2 sesiones seguidas**, baja un nivel de apoyo. | *Inferencia de diseño:* volver a condiciones de pocos errores (Mueller et al., 2007). |
 | Las palabras dominadas pasan a **repaso espaciado** (p. ej., a los 2, 7 y 21 días). | Mantenimiento medido de forma espaciada (Fuller y Fienup, 2018; evidencia §2). Intervalos concretos: *inferencia de diseño*. |
@@ -162,7 +174,7 @@ Se registra solo lo necesario para decidir dominio y ayudas:
 | Campo | Ejemplo |
 |---|---|
 | palabra | MIEL |
-| tipo de carta | imagen_estimulo / elegir_texto / leer |
+| tipo de carta | elegir_texto / leer (historiales antiguos pueden traer imagen_estimulo) |
 | nivel de ayuda | ninguna / B / C |
 | acierto al primer intento | sí / no |
 | latencia (ms) | 2300 |

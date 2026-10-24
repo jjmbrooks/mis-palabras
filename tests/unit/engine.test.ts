@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Session, wordStates, nextHelp, toCSV, isIndependent, LEVELS, TrialRecord } from '../../src/engine';
+import { Session, wordStates, nextHelp, toCSV, isIndependent, LEVELS, TrialRecord, instructionFor } from '../../src/engine';
 import { DECK, SIMILAR, wordById } from '../../src/deck';
 
 const seeded = (s = 1) => () => ((s = (s * 16807) % 2147483647) / 2147483647);
@@ -46,7 +46,7 @@ describe('dominio', () => {
   it('sube de nivel con ≥90 % en 2 sesiones seguidas y baja con <60 %', () => {
     const h = [tr('miel', 's1', true, 1), tr('miel', 's2', true, 2)];
     expect(wordStates(h).get('miel')!.level).toBe(1);
-    const h2 = [...h, tr('miel', 's3', false, 3, 'emparejar'), tr('miel', 's4', false, 4, 'emparejar')];
+    const h2 = [...h, tr('miel', 's3', false, 3, 'solo_texto'), tr('miel', 's4', false, 4, 'solo_texto')];
     expect(wordStates(h2).get('miel')!.level).toBe(0);
   });
   it('se domina tras el nivel solo texto', () => {
@@ -65,12 +65,12 @@ describe('D12: solo texto por defecto', () => {
     return out;
   };
   it('ningún nivel usa imagen + texto como carta de ensayo', () => {
-    expect(LEVELS).toEqual(['imagen_estimulo', 'elegir_texto', 'leer']);
-    for (const t of kinds()) expect(['imagen_estimulo', 'elegir_texto', 'leer']).toContain(t.cardType);
+    expect(LEVELS).toEqual(['elegir_texto', 'leer']);
+    for (const t of kinds()) expect(['elegir_texto', 'leer']).toContain(t.cardType);
   });
   it('las opciones son palabras escritas (2–3) y «leer» muestra solo la palabra', () => {
     for (const t of kinds()) { expect(t.options.length).toBeGreaterThanOrEqual(2); expect(t.options.length).toBeLessThanOrEqual(3); }
-    const lv2 = ['imagen_estimulo','imagen_estimulo','elegir_texto','elegir_texto'].map((c, i) => tr('sol', 'x' + i, true, i, c as TrialRecord['cardType']));
+    const lv2 = ['elegir_texto','elegir_texto'].map((c, i) => tr('sol', 'x' + i, true, i, c as TrialRecord['cardType']));
     const t = new Session(wordStates(lv2), seeded(2), undefined, ['sol']).next()!;
     expect(t.word === 'sol' ? t.options : ['sol']).toEqual(['sol']);
   });
@@ -89,9 +89,20 @@ describe('D12: solo texto por defecto', () => {
     expect(kinds(undefined, { knowsPictures: true }).some(t => t.presentFirst)).toBe(false);
     expect(kinds(undefined, { knowsPictures: false }).some(t => t.presentFirst)).toBe(true);
   });
-  it('lee historiales anteriores a D12 (imagen_texto → imagen_estimulo, etc.)', () => {
+  it('lee historiales antiguos (imagen_texto, imagen_estimulo y emparejar cuentan como elegir_texto)', () => {
     const h = [tr('miel', 's1', true, 1, 'imagen_texto'), tr('miel', 's2', true, 2, 'imagen_estimulo')];
     expect(wordStates(h).get('miel')!.level).toBe(1);
+    const mix = [tr('sol', 's1', true, 1, 'imagen_estimulo'), tr('sol', 's2', true, 2, 'elegir_texto')];
+    expect(wordStates(mix).get('sol')!.level).toBe(1);
+  });
+  it('D15: no existe ensayo dibujo → palabra aparte; las sesiones solo generan elegir_texto y leer', () => {
+    for (let seed = 1; seed < 20; seed++) for (const t of kinds(undefined, undefined, seed)) expect(t.cardType).not.toBe('imagen_estimulo');
+    const lv = ['imagen_estimulo','imagen_estimulo'].map((c, i) => tr('sol', 'y' + i, true, i, c as TrialRecord['cardType']));
+    expect(wordStates(lv).get('sol')!.level).toBe(1); // un historial con dibujo → palabra avanza a leer, no se pierde
+  });
+  it('D15: elegir_texto nombra la palabra con el dibujo visible; ya no se dice «Toca la palabra de este dibujo»', () => {
+    for (const c of ['elegir_texto', 'imagen_estimulo', 'imagen_texto', 'emparejar'] as const)
+      expect(instructionFor(c, 'MIEL').spoken).toBe('Toca donde dice MIEL');
   });
 });
 
@@ -131,13 +142,13 @@ describe('D13: modo independiente', () => {
     const s = new IndependentSession(wordStates([]), seeded(1));
     expect(s.available).toBe(false); expect(s.next(0)).toBeNull();
   });
-  it('solo pregunta palabras dominadas, con estímulo solo imagen y sin fase de enseñanza', () => {
+  it('solo pregunta palabras dominadas, con «Toca donde dice…» y sin fase de enseñanza', () => {
     const s = new IndependentSession(wordStates(masteredHist(['sol', 'miel', 'flor'])), seeded(7));
     expect(s.words.sort()).toEqual(['flor', 'miel', 'sol']);
     let t;
     for (let i = 0; i < 20 && (t = s.next(0)); i++) {
       expect(['sol', 'miel', 'flor']).toContain(t.word);
-      expect(t.cardType).toBe('imagen_estimulo'); expect(t.presentFirst).toBe(false);
+      expect(t.cardType).toBe('elegir_texto'); expect(t.presentFirst).toBe(false);
       expect(t.options).toContain(t.word); s.record(t, true);
     }
   });
@@ -160,24 +171,24 @@ describe('D13: modo independiente', () => {
   });
 });
 
-import { instructionFor, mentionsWord, NO_TARGET_IN_INSTRUCTION } from '../../src/engine';
+import { mentionsWord, NO_TARGET_IN_INSTRUCTION } from '../../src/engine';
 
 describe('D14: instrucción hablada', () => {
-  it('en leer e imagen_estimulo ninguna instrucción (dicha o visible) contiene la palabra meta', () => {
+  it('en leer ninguna instrucción (dicha o visible) contiene la palabra meta', () => {
     for (const c of NO_TARGET_IN_INSTRUCTION) for (const w of DECK) {
       const i = instructionFor(c, w.text);
       expect(mentionsWord(i.spoken, w.text), `${c}/${w.text}`).toBe(false);
       expect(mentionsWord(i.shown, w.text), `${c}/${w.text}`).toBe(false);
     }
-    expect(NO_TARGET_IN_INSTRUCTION).toEqual(expect.arrayContaining(['leer', 'imagen_estimulo']));
+    expect(NO_TARGET_IN_INSTRUCTION).toEqual(['leer', 'solo_texto']);
   });
-  it('en sesiones reales (tutor y solo) las instrucciones de leer e imagen_estimulo no dicen la palabra', () => {
+  it('en sesiones reales (tutor y solo) las instrucciones de leer no dicen la palabra', () => {
     const specs = [];
     const s = new Session(wordStates([]), seeded(11)); let t;
     while ((t = s.next())) { specs.push(t); s.record(t, true); }
     const ind = new IndependentSession(wordStates(masteredHist(['sol', 'miel', 'flor'])), seeded(5));
     for (let i = 0; i < 10 && (t = ind.next(0)); i++) { specs.push(t); ind.record(t, true); }
-    for (const sp of specs.filter(x => x.cardType !== 'elegir_texto'))
+    for (const sp of specs.filter(x => x.cardType === 'leer'))
       expect(mentionsWord(instructionFor(sp.cardType, wordById(sp.word).text).spoken, wordById(sp.word).text)).toBe(false);
   });
   it('elegir_texto sí nombra la palabra al hablar («Toca donde dice ABEJA») y solo muestra «Toca donde dice…»', () => {

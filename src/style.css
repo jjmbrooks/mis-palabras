@@ -37,11 +37,11 @@ table { border-collapse:collapse; width:100%; font-size:1rem; } td, th { text-al
 .instr { font-size:1.6rem; text-align:center; margin:0; }
 .card { font:inherit; color:inherit; background:var(--card); border:3px solid var(--line); border-radius:22px; padding:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer; transition:transform .25s, border-color .25s; }
 .card .pic svg { width:100%; height:100%; } .card .pic { width:100%; max-width:180px; aspect-ratio:1; }
-.word { font-family:"DejaVu Sans", Verdana, "Arial Rounded MT Bold", sans-serif; font-size:2.4rem; font-weight:700; letter-spacing:.05em; color:#000; text-transform:uppercase; }
-.present { min-height:52vh; } .present .pic { max-width:260px; } .present .word { font-size:3.2rem; }
+.word { font-family:"DejaVu Sans", Verdana, "Arial Rounded MT Bold", sans-serif; font-weight:700; letter-spacing:.05em; color:#000; text-transform:uppercase; }
+.present { min-height:52vh; } .present .pic { max-width:260px; }
 [hidden] { display:none !important; }
 .model { justify-content:center; } .model:not([hidden]) { background:#f3eedf; border-radius:18px; padding:8px; display:flex; flex-direction:column; align-items:center; }
-.model .pic { width:110px; aspect-ratio:1; } .model .word { font-size:2rem; }
+.model .pic { width:110px; aspect-ratio:1; }
 .opts { display:grid; gap:14px; grid-template-columns:1fr 1fr; } .opts.n3 { grid-template-columns:1fr 1fr; } .opts.n3 .opt:last-child { grid-column:1 / -1; }
 .opt { min-height:170px; } .opt:disabled { cursor:default; opacity:1; } .opt:disabled:not(.ok) { filter:saturate(.85); }
 .opt.hint { border-color:var(--hint); box-shadow:0 0 0 6px #f6c94566; animation:pulse 1.6s ease-in-out infinite; }
@@ -60,3 +60,29 @@ tr.sub td { font-size: .8rem; color: #6b6458; padding-top: 0; }
 /* D14: instrucción hablada con botón grande para repetirla */
 .instr-row { display: flex; align-items: center; justify-content: center; gap: .75rem; }
 .btn.again { font-size: 2rem; width: 4rem; height: 4rem; border-radius: 50%; padding: 0; line-height: 1; }
+
+/* D15: pantalla de ensayo sin scroll (100dvh) y palabras auto-ajustadas por ancho */
+.screen.play { height:100dvh; min-height:0; overflow:hidden; gap:10px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
+.play .stage { min-height:0; gap:12px; justify-content:flex-start; }
+.play .instr { font-size:clamp(1.2rem, 4.5dvh, 1.6rem); }
+.play .btn.again { width:clamp(3.2rem, 8dvh, 4rem); height:clamp(3.2rem, 8dvh, 4rem); font-size:clamp(1.6rem, 4dvh, 2rem); flex:none; }
+.play .opts, .play .opts.n3 { display:flex; flex-direction:column; gap:12px; flex:1 1 0; min-height:0; }
+.play .opts.n3 .opt:last-child { grid-column:auto; }
+.play .opt { flex:1 1 0; min-height:56px; max-height:200px; padding:6px 12px; }
+.play .help-b { margin:0 auto; flex:none; min-height:48px; }
+.play .stim { flex:0 1 auto; min-height:0; display:flex; justify-content:center; }
+.play .stim .pic { width:auto; height:min(30dvh, 220px); aspect-ratio:1; }
+.play .model:not([hidden]) { flex:0 1 auto; min-height:0; flex-direction:row; gap:12px; padding:6px 12px; justify-content:center; }
+.play .model .pic { width:auto; height:min(14dvh, 110px); aspect-ratio:1; flex:none; }
+.play .model .word { flex:1; text-align:center; }
+.play .card.read { flex:1 1 0; min-height:0; max-height:240px; width:100%; }
+.play .present { min-height:0; flex:1 1 0; }
+.play .present .pic { width:auto; height:min(40dvh, 260px); max-width:none; }
+.play .row .btn { min-height:52px; }
+/* Ajuste por ancho: el tamaño de letra depende del ancho de la carta y del número de letras (--n),
+   con tope; así ninguna palabra (MARIPOSA incluida) se corta. 0.9em ≈ ancho de una mayúscula
+   en negrita + letter-spacing de DejaVu Sans; se deja margen. */
+.card, .model { container-type:inline-size; }
+.word { --n:5; white-space:nowrap; max-width:100%; font-size:min(var(--wmax, 2.8rem), calc(100cqi / (var(--n) * 0.95 + 0.4))); line-height:1.1; }
+.present .word { --wmax:3.4rem; }
+.model .word { --wmax:2.2rem; }

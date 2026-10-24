@@ -3,10 +3,9 @@ import { DECK, SIMILAR } from './deck';
 
 /**
  * Tipos de carta (D12, docs/mecanica-inicial.md §2).
- * - imagen_estimulo: el niño ve solo el dibujo y elige entre palabras escritas.
- * - elegir_texto: el tutor dice la palabra y el niño la elige entre 2–3 palabras escritas.
+ * - elegir_texto (D15): se ve el dibujo, la voz dice «Toca donde dice MIEL» y el niño elige entre 2–3 palabras escritas.
  * - leer: el niño lee en voz alta la palabra escrita, sola; el tutor marca el resultado.
- * imagen_texto / emparejar / solo_texto quedan solo para leer historiales anteriores a D12.
+ * imagen_estimulo (D12–D14) e imagen_texto / emparejar / solo_texto quedan solo para leer historiales antiguos.
  */
 export type CardType = 'imagen_estimulo' | 'elegir_texto' | 'leer' | 'imagen_texto' | 'emparejar' | 'solo_texto';
 export type Help = 'ninguna' | 'A' | 'B' | 'C';
@@ -40,10 +39,16 @@ export interface SessionRecord {
   trials: number;
 }
 
-export const LEVELS: CardType[] = ['imagen_estimulo', 'elegir_texto', 'leer'];
-/** Equivalencia de historiales anteriores a D12 con los niveles actuales. */
-const LEGACY: Partial<Record<CardType, CardType>> = { imagen_texto: 'imagen_estimulo', emparejar: 'elegir_texto', solo_texto: 'leer' };
-const levelOf = (c: CardType) => LEVELS.indexOf(LEGACY[c] ?? c);
+/**
+ * Niveles (D15). Por defecto solo lectura: elegir_texto («Toca donde dice MIEL») → leer.
+ * El ensayo dibujo → palabra (imagen_estimulo) solo se activa por niño si aún no conoce el vocabulario.
+ */
+export const LEVELS: CardType[] = ['elegir_texto', 'leer'];
+/** D15: los historiales con dibujo → palabra (imagen_estimulo, imagen_texto) cuentan como elegir_texto:
+ *  en ambos el niño ve el dibujo y elige entre palabras escritas. emparejar → elegir_texto, solo_texto → leer. */
+const LEGACY: Partial<Record<CardType, CardType>> = { imagen_estimulo: 'elegir_texto', imagen_texto: 'elegir_texto', emparejar: 'elegir_texto', solo_texto: 'leer' };
+export const normalizeCardType = (c: CardType): CardType => LEGACY[c] ?? c;
+const levelOf = (c: CardType) => LEVELS.indexOf(normalizeCardType(c));
 export const MASTER = 0.9; // ≥ 90 % (§5)
 export const DROP = 0.6; // < ≈60 % (§5)
 
@@ -95,6 +100,7 @@ export interface TrialSpec {
 export interface SessionOptions {
   /** El niño ya conoce los dibujos: se salta la fase de enseñanza imagen + texto (D12.5). */
   knowsPictures: boolean;
+  /** D15: el niño aún no conoce el vocabulario → se activan el ensayo dibujo → palabra y la enseñanza con imagen. */
 }
 
 /** Acierto independiente: al primer intento y sin ayuda. Un ensayo con ayuda nunca cuenta (D12.2). */
@@ -138,10 +144,11 @@ export class Session {
 
   private build(word: string, repeat = false): TrialSpec {
     const level = this.states.get(word)?.level ?? 0;
-    const cardType = LEVELS[level];
+    const cardType = LEVELS[Math.min(level, LEVELS.length - 1)];
     const n = this.optionCount(word);
     const pool = shuffle(DECK.map(w => w.id).filter(id => id !== word && !similar(id, word)), this.rng);
     const options = cardType === 'leer' ? [word] : shuffle([word, ...pool.slice(0, n - 1)], this.rng);
+    // D15: sin dibujo por defecto; la carta de enseñanza imagen + texto solo si se activó para el niño.
     const presentFirst = !this.opts.knowsPictures && !repeat && !this.presented.has(word) && !this.states.get(word)?.mastered;
     this.presented.add(word);
     return { word, cardType, options, presentFirst, repeat };
@@ -209,7 +216,7 @@ export function progress(sessions: SessionRecord[], trials: TrialRecord[]): Sess
 export const INDEP_MIN = 3, INDEP_MAX = 5;
 export const clampIndepMinutes = (m: number) => Math.min(INDEP_MAX, Math.max(INDEP_MIN, Math.round(m) || 4));
 
-/** Práctica sin tutor: solo palabras dominadas; sesión corta (3–5 min) que cierra sola. */
+/** Práctica sin tutor: solo palabras dominadas; sesión corta (3–5 min) que cierra sola. Ensayo «Toca donde dice…» (D15). */
 export class IndependentSession {
   readonly words: string[];
   readonly limitMs: number;
@@ -226,7 +233,7 @@ export class IndependentSession {
     // Distractores: otras palabras dominadas primero; si no alcanzan, del mazo (nunca parecidas).
     const ok = (id: string) => id !== word && !similar(id, word);
     const pool = [...shuffle(this.words.filter(ok), this.rng), ...shuffle(DECK.map(w => w.id).filter(id => ok(id) && !this.words.includes(id)), this.rng)];
-    return { word, cardType: 'imagen_estimulo', options: shuffle([word, ...pool.slice(0, n - 1)], this.rng), presentFirst: false, repeat };
+    return { word, cardType: 'elegir_texto', options: shuffle([word, ...pool.slice(0, n - 1)], this.rng), presentFirst: false, repeat };
   }
   /** null al agotar tiempo o ensayos, o si no hay palabras dominadas. */
   next(elapsedMs: number): TrialSpec | null {
@@ -245,18 +252,17 @@ export class IndependentSession {
 // ---------- D14: instrucción hablada ----------
 
 /** Tipos en los que la instrucción NUNCA dice la palabra meta (bloqueo de estímulo, como D12). */
-export const NO_TARGET_IN_INSTRUCTION: CardType[] = ['imagen_estimulo', 'leer', 'imagen_texto', 'solo_texto'];
+export const NO_TARGET_IN_INSTRUCTION: CardType[] = ['leer', 'solo_texto'];
 
 /**
  * Instrucción de cada ensayo (D14): `spoken` se lee en voz alta al empezar y con el botón 🔊;
  * `shown` es el único texto visible.
- * - leer e imagen_estimulo: frase neutra, sin la palabra meta.
- * - elegir_texto: «Toca donde dice ABEJA». Aquí sí se nombra, porque la tarea es emparejar lo que oye con el texto.
+ * - leer: frase neutra, sin la palabra meta.
+ * - cualquier otro tipo (elegir_texto y los antiguos con dibujo, D15): «Toca donde dice ABEJA». Aquí sí se nombra, porque la tarea es emparejar lo que oye con el texto.
  */
 export function instructionFor(c: CardType, wordText: string): { spoken: string; shown: string } {
-  if (c === 'elegir_texto' || c === 'emparejar') return { spoken: `Toca donde dice ${wordText}`, shown: 'Toca donde dice…' };
   if (c === 'leer' || c === 'solo_texto') return { spoken: '¿Qué dice aquí?', shown: '¿Qué dice aquí?' };
-  return { spoken: 'Toca la palabra de este dibujo.', shown: 'Toca la palabra de este dibujo.' };
+  return { spoken: `Toca donde dice ${wordText}`, shown: 'Toca donde dice…' };
 }
 
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

@@ -17,15 +17,17 @@
 | `main.ts` | Pantallas: inicio/login, elegir niño (apodo), sesión, cierre, panel del tutor. |
 
 ## Cómo se implementa `docs/mecanica-inicial.md`
-- **Presentación** (§3.1): la primera vez que aparece una palabra objetivo se muestra la carta imagen + texto y suena la palabra; **se omite** si el tutor marcó «ya conoce los dibujos» (por mazo o por niño, en el dispositivo) y en la repetición tras ayuda.
-- **Ensayo** (§3.2, D12): solo texto por defecto y instrucción hablada con botón 🔊 para repetirla (D14, `instructionFor`): neutra en `leer` e `imagen_estimulo`, y «Toca donde dice ABEJA» en `elegir_texto`. Tipos: `imagen_estimulo` (dibujo solo → elegir entre 2–3 palabras escritas), `elegir_texto` (la app dice la palabra y el niño la elige) y `leer` (palabra sola; el tutor marca «Leyó bien» / «Aún no»). 2 opciones, 3 cuando la palabra supera el 80 % en la sesión; posiciones mezcladas; controles habilitados ≥ 1 s después de iniciar; tras responder suena la palabra.
+- **Presentación** (§3.1): desde D15 no hay carta imagen + texto previa; el dibujo acompaña cada ensayo de elegir y la carta imagen + texto queda como Ayuda.
+- **Ensayo** (§3.2, D12): solo texto por defecto y instrucción hablada con botón 🔊 para repetirla (D14, `instructionFor`): neutra en `leer` y «Toca donde dice ABEJA» en `elegir_texto`. Tipos (D15): `elegir_texto` (dibujo visible, la app dice la palabra y el niño la elige entre 2–3 palabras escritas) y `leer` (palabra sola; el tutor marca «Leyó bien» / «Aún no»). 2 opciones, 3 cuando la palabra supera el 80 % en la sesión; posiciones mezcladas; controles habilitados ≥ 1 s después de iniciar; tras responder suena la palabra.
 - **Acierto** (§3.3): resalta la carta, sonido suave (< 1 s), «¡MIEL, muy bien!» y +1 moneda.
 - **Error o duda** (§3.4, D12): sin sonido negativo. Botón «Ayuda», ≈5 s sin respuesta (configurable 3–5) o un error muestran la carta imagen + texto (**B**); otro error pide guía del tutor y deja activa solo la correcta (**C**). Después se repite la palabra sola; solo esa repetición sin ayuda cuenta como acierto independiente (`isIndependent`).
 - **Sesión** (§4): 2–4 palabras objetivo (se evitan PAN/PANAL y MAMÁ/PAPÁ juntas), 12 ensayos (máx. 15), termina en acierto; límite 5–10 min (8 por defecto) con barra que se vacía y aviso «Ya casi terminamos»; botón Terminar.
-- **Dominio** (§5): ≥ 90 % al primer intento sin ayuda en 2 sesiones seguidas sube de nivel (`imagen_estimulo` → `elegir_texto` → `leer` → dominada; historiales anteriores se leen por equivalencia); < 60 % en 2 sesiones seguidas baja un nivel. Pendiente para fases siguientes: repaso espaciado, comprobación con tarjetas físicas, palabras propias.
+- **Dominio** (§5): ≥ 90 % al primer intento sin ayuda en 2 sesiones seguidas sube de nivel (`elegir_texto` → `leer` → dominada; historiales anteriores, incluido `imagen_estimulo`, se leen por equivalencia); < 60 % en 2 sesiones seguidas baja un nivel. Pendiente para fases siguientes: repaso espaciado, comprobación con tarjetas físicas, palabras propias.
 - **Registro y modo independiente** (D13, modos-de-uso.md): cada sesión guarda inicio, fin, duración, modo y mazo (`sessions`), y cada ensayo, `mode` y `helps`. El panel del tutor muestra las sesiones y el % al primer intento por palabra. «Practicar solo» (`IndependentSession`) usa solo palabras dominadas, dura 3–5 min y se cierra sola, y termina con un dato curioso (`facts.ts`). No cuenta para el dominio.
 - **Candado para adultos** (D6): el panel del tutor se abre manteniendo presionado 2 s.
 - **Sensorial** (§7): paleta suave, botones ≥ 56 px, volumen ajustable con tope, sin parpadeos, animaciones < 1 s, respeta `prefers-reduced-motion` y tiene interruptor propio.
+
+- **Pantalla sin scroll** (§3.7, D15): `.screen.play` mide `100dvh` con `overflow:hidden`; opciones apiladas en flex; `.word` ajusta su tamaño con `cqi` y `--n` (letras). Prueba: `npm run test:layout` (Chrome + playwright-core, 360×640 y 412×915).
 
 ## Sin conexión
 Firestore usa `persistentLocalCache` (IndexedDB): las sesiones se registran sin red y se sincronizan al volver. El *service worker* guarda la app. Borrar la cuenta sí requiere conexión.
