@@ -30,7 +30,7 @@
 Firestore usa `persistentLocalCache` (IndexedDB): las sesiones se registran sin red y se sincronizan al volver. El *service worker* guarda la app. Borrar la cuenta sí requiere conexión.
 
 ## Arte
-Las ilustraciones de la app son **marcadores temporales**: SVG simples escritos por código en `src/deck.ts` para este repositorio (sin IA generativa ni referencias externas). El arte definitivo del mazo (SVG kawaii por código) está en revisión y se integrará cuando se apruebe.
+Las 15 ilustraciones del mazo son SVG vectoriales originales escritos por código, sin IA generativa ni referencias externas, en `src/art/` (ABEJA, MIEL y FLOR por Diversa; las otras 12 por Codelius). Estilo y paleta: [estilo-mazo-abejas.md](estilo-mazo-abejas.md). `src/deck.ts` las carga y prefija sus `id` internos para que no choquen en pantalla.
 
 ## Audio
 La voz es **provisional**: `speechSynthesis` del dispositivo en es-MX (la calidad depende del sistema). Se reemplazará por grabaciones de voz natural y pausada. El refuerzo es sintetizado (dos notas senoidales suaves, ≈ 0.7 s, ganancia máx. 0.18 × volumen).

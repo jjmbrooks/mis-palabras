@@ -7,6 +7,7 @@
 | [mecanica-inicial.md](mecanica-inicial.md) | Mecánica del MVP: modo con tutor, flujo de carta, ayuda graduada, sesión, dominio, primer mazo, criterios sensoriales y datos por ensayo. |
 | [ARQUITECTURA.md](ARQUITECTURA.md) | Cómo está construida la app (MVP Modo con tutor): módulos, mecánica implementada, sin conexión, arte y audio provisionales, despliegue. |
 | [PRIVACIDAD-TECNICA.md](PRIVACIDAD-TECNICA.md) | Cómo el código cumple los requisitos de privacidad: reglas, datos guardados, exportar y borrar. |
+| [estilo-mazo-abejas.md](estilo-mazo-abejas.md) | Estilo artístico, paleta, tipografía y origen del arte del mazo «Abejas y jardín». |
 
 ## Cómo proponer correcciones
 
