@@ -27,9 +27,9 @@ try {
     await p.goto(`http://localhost:5181/?semilla`);
     await p.click('#d'); await p.waitForSelector('#start'); await p.click('#start');
     const seen = new Set(); let n = 0;
-    while (n++ < 80 && !['leer', 'dibujo2', 'dibujo3', 'sin-dibujo3'].every(k => seen.has(k))) {
+    while (n++ < 200 && !['leer', 'dibujo2', 'dibujo3', 'sin-dibujo3'].every(k => seen.has(k))) {
       await p.waitForSelector('#go, #again:not([disabled]), #home', { timeout: 20000 });
-      if (await p.$('#home')) break;
+      if (await p.$('#home')) { await p.click('#home'); await p.waitForSelector('#start'); await p.click('#start'); continue; }
       if (await p.$('#go')) { await p.click('#go'); continue; }
       // D16: N1 = dibujo + 2 opciones, N2/N3 = dibujo + 3, N4 = sin dibujo + 3, N5 = leer.
       const kind = await p.evaluate(() => document.querySelector('#rok') ? 'leer' : `${document.querySelector('.stim') ? 'dibujo' : 'sin-dibujo'}${document.querySelectorAll('.opt').length}`);
