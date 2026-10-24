@@ -24,6 +24,7 @@ Varias ideas de este documento (los dos modos de uso, los tipos de carta, los ma
 | D10. Diseño sensorial tranquilo, sin anuncios ni compras | Evidencia + inferencia |
 | D13. Registro de sesiones y modo independiente | Evidencia + inferencia |
 | D15. Pantalla sin scroll; dibujo con «Toca donde dice…» (ver mecanica-inicial §3.7) | Evidencia + inferencia |
+| D16. Niveles N1–N5 y arreglo de «Practicar solo» (ver mecanica-inicial §3.8 y §5) | Evidencia + inferencia |
 | D11. Mazos temáticos con personajes propios | Evidencia + criterio legal |
 
 ---

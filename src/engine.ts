@@ -22,6 +22,7 @@ export interface TrialRecord {
   at: number; // fecha y hora (ms epoch)
   mode?: Mode; // D13; ausente en ensayos anteriores = tutor
   helps?: number; // D13: cuántas ayudas se activaron en el ensayo
+  level?: Level; // D16: nivel N1–N5 con el que se presentó; ausente en ensayos anteriores a D16
 }
 
 export type Mode = 'tutor' | 'independiente';
@@ -40,43 +41,81 @@ export interface SessionRecord {
 }
 
 /**
- * Niveles (D15). Por defecto solo lectura: elegir_texto («Toca donde dice MIEL») → leer.
- * El ensayo dibujo → palabra (imagen_estimulo) solo se activa por niño si aún no conoce el vocabulario.
+ * Niveles por palabra (D16, docs/mecanica-inicial.md §5). Los apoyos se retiran de uno en uno:
+ * N1 dibujo + «Toca donde dice X», 2 opciones muy distintas (longitud o letra inicial)
+ * N2 igual, con 3 opciones
+ * N3 dibujo + distractores parecidos (misma letra inicial o misma longitud)
+ * N4 sin dibujo, «Toca donde dice X», distractores parecidos  → la palabra queda DOMINADA
+ * N5 la palabra sola, «¿Qué dice aquí?»; el niño la dice y el tutor marca (solo con tutor)
  */
+export type Level = 1 | 2 | 3 | 4 | 5;
+export const MAX_LEVEL: Level = 5;
+export const MASTERED_LEVEL: Level = 4;
+/** @deprecated D15; se conserva para pruebas antiguas: tipos de carta en uso. */
 export const LEVELS: CardType[] = ['elegir_texto', 'leer'];
-/** D15: los historiales con dibujo → palabra (imagen_estimulo, imagen_texto) cuentan como elegir_texto:
- *  en ambos el niño ve el dibujo y elige entre palabras escritas. emparejar → elegir_texto, solo_texto → leer. */
+export const cardTypeFor = (l: Level): CardType => (l === 5 ? 'leer' : 'elegir_texto');
+export const pictureFor = (l: Level) => l <= 3;
+export const optionCountFor = (l: Level) => (l === 1 ? 2 : l === 5 ? 1 : 3);
+
+/** Historiales anteriores a D16: tipos antiguos equivalentes. */
 const LEGACY: Partial<Record<CardType, CardType>> = { imagen_estimulo: 'elegir_texto', imagen_texto: 'elegir_texto', emparejar: 'elegir_texto', solo_texto: 'leer' };
 export const normalizeCardType = (c: CardType): CardType => LEGACY[c] ?? c;
-const levelOf = (c: CardType) => LEVELS.indexOf(normalizeCardType(c));
-export const MASTER = 0.9; // ≥ 90 % (§5)
-export const DROP = 0.6; // < ≈60 % (§5)
+export const MASTER = 0.9; // ≥ 90 % al primer intento en 2 sesiones seguidas → sube
+export const DROP_FAILS = 2; // 2 fallos seguidos → baja un nivel
 
-export interface WordState { level: number; mastered: boolean }
+export interface WordState {
+  level: Level;
+  mastered: boolean; // alcanzó N4
+  complete: boolean; // superó también N5 (lectura en voz alta con tutor)
+}
 
-/** Nivel de apoyo de cada palabra a partir del historial (§5). */
+/** Estado anterior a D16 (D12–D15): elegir → leer → dominada, con ≥90 % / <60 % en 2 sesiones. */
+function legacyLevel(trials: TrialRecord[]): Level {
+  const sessions: string[] = [];
+  for (const t of trials) if (!sessions.includes(t.sessionId)) sessions.push(t.sessionId);
+  let level = 0, done = false, hi = 0, lo = 0;
+  for (const s of sessions) {
+    const ts = trials.filter(t => t.sessionId === s && LEVELS.indexOf(normalizeCardType(t.cardType)) === level);
+    if (!ts.length) continue;
+    const acc = ts.filter(t => t.correct).length / ts.length;
+    if (acc >= MASTER) { hi++; lo = 0; } else if (acc < 0.6) { lo++; hi = 0; } else { hi = 0; lo = 0; }
+    if (hi >= 2) { hi = 0; if (level === 1) done = true; else level++; }
+    else if (lo >= 2) { lo = 0; done = false; if (level > 0) level--; }
+  }
+  // Migración (D16): el nivel «elegir» de antes era dibujo + palabra dicha = N1; quien ya pasó a «leer»
+  // eligió bien entre palabras escritas muchas veces → N4 (dominada); quien ya leía sola → N5 superado.
+  return done ? 5 : level === 1 ? 4 : 1;
+}
+
+/** Nivel de cada palabra a partir del historial (D16). La práctica independiente no cuenta (D5/D13). */
 export function wordStates(history: TrialRecord[]): Map<string, WordState> {
   const out = new Map<string, WordState>();
-  // D5/D13: la práctica independiente no cuenta para el dominio.
   const sorted = history.filter(t => t.mode !== 'independiente').sort((a, b) => a.at - b.at);
   for (const w of DECK) {
     const trials = sorted.filter(t => t.word === w.id);
+    const legacy = trials.filter(t => t.level === undefined);
+    let level: Level = legacy.length ? legacyLevel(legacy) : 1;
+    let complete = legacy.length > 0 && level === 5; // ya leía sola con el sistema anterior
+    let hi = 0, fails = 0;
     const sessions: string[] = [];
-    for (const t of trials) if (!sessions.includes(t.sessionId)) sessions.push(t.sessionId);
-    let level = 0, mastered = false, hi = 0, lo = 0;
+    const fresh = trials.filter(t => t.level !== undefined);
+    for (const t of fresh) if (!sessions.includes(t.sessionId)) sessions.push(t.sessionId);
     for (const s of sessions) {
-      const ts = trials.filter(t => t.sessionId === s && levelOf(t.cardType) === level);
-      if (!ts.length) continue;
-      const acc = ts.filter(t => t.correct).length / ts.length;
-      if (acc >= MASTER) { hi++; lo = 0; } else if (acc < DROP) { lo++; hi = 0; } else { hi = 0; lo = 0; }
-      if (hi >= 2) {
-        hi = 0;
-        if (level === LEVELS.length - 1) mastered = true; else level++;
-      } else if (lo >= 2) {
-        lo = 0; mastered = false; if (level > 0) level--;
+      let n = 0, ok = 0, dropped = false;
+      for (const t of fresh.filter(x => x.sessionId === s)) {
+        if (t.level !== level) continue;
+        n++; if (t.correct) { ok++; fails = 0; } else if (++fails >= DROP_FAILS) {
+          fails = 0; hi = 0; complete = false; dropped = true;
+          if (level > 1) level = (level - 1) as Level;
+          n = 0; ok = 0;
+        }
       }
+      if (dropped || !n) { if (dropped) hi = 0; continue; }
+      if (ok / n >= MASTER) {
+        if (++hi >= 2) { hi = 0; if (level === MAX_LEVEL) complete = true; else level = (level + 1) as Level; }
+      } else hi = 0;
     }
-    out.set(w.id, { level, mastered });
+    out.set(w.id, { level, mastered: level >= MASTERED_LEVEL, complete });
   }
   return out;
 }
@@ -88,19 +127,45 @@ export function shuffle<T>(arr: T[], rng: Rng): T[] {
   return a;
 }
 const similar = (a: string, b: string) => SIMILAR.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+const upper = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+const textOf = (id: string) => upper(DECK.find(w => w.id === id)!.text);
+const len = (id: string) => [...textOf(id)].length;
+/** N1/N2: distractor muy distinto (otra letra inicial y ≥2 letras de diferencia en longitud). */
+export const isVeryDifferent = (a: string, b: string) => textOf(a)[0] !== textOf(b)[0] && Math.abs(len(a) - len(b)) >= 2;
+/** N3/N4: distractor parecido (misma letra inicial o misma longitud). */
+export const isLookAlike = (a: string, b: string) => a !== b && (textOf(a)[0] === textOf(b)[0] || len(a) === len(b));
+
+/** Distractores según el nivel (D16). Con pocas palabras se completa con la mejor alternativa. */
+export function distractors(word: string, level: Level, rng: Rng, pool: string[] = DECK.map(w => w.id)): string[] {
+  const n = optionCountFor(level) - 1;
+  if (n <= 0) return [];
+  const others = shuffle(pool.filter(id => id !== word), rng);
+  let ranked: string[];
+  if (level <= 2) {
+    const ok = others.filter(id => !similar(id, word));
+    ranked = [...ok.filter(id => isVeryDifferent(id, word)),
+      ...ok.filter(id => !isVeryDifferent(id, word) && !isLookAlike(id, word)),
+      ...ok.filter(id => isLookAlike(id, word))];
+  } else {
+    ranked = [...others.filter(id => similar(id, word)), ...others.filter(id => !similar(id, word) && isLookAlike(id, word)),
+      ...others.filter(id => !isLookAlike(id, word)).sort((a, b) => Math.abs(len(a) - len(word)) - Math.abs(len(b) - len(word)))];
+  }
+  return [...new Set(ranked)].slice(0, n);
+}
 
 export interface TrialSpec {
   word: string;
+  level: Level;
   cardType: CardType;
-  options: string[]; // palabras escritas, ya mezcladas ([word] en «leer»)
-  presentFirst: boolean; // fase de enseñanza imagen + texto antes (§3.1); nunca si el niño ya conoce los dibujos
-  repeat: boolean; // repetición sola tras ayuda: la única que cuenta como acierto independiente
+  picture: boolean; // dibujo visible durante el ensayo (N1–N3)
+  options: string[]; // palabras escritas, ya mezcladas ([word] en N5)
+  presentFirst: boolean; // carta de enseñanza imagen + texto antes (§3.1); desde D15 no se usa
+  repeat: boolean; // repetición tras un error o ayuda
 }
 
 export interface SessionOptions {
-  /** El niño ya conoce los dibujos: se salta la fase de enseñanza imagen + texto (D12.5). */
+  /** El niño ya conoce los dibujos: se salta la carta de enseñanza imagen + texto (D12.5; desde D15 siempre true). */
   knowsPictures: boolean;
-  /** D15: el niño aún no conoce el vocabulario → se activan el ensayo dibujo → palabra y la enseñanza con imagen. */
 }
 
 /** Acierto independiente: al primer intento y sin ayuda. Un ensayo con ayuda nunca cuenta (D12.2). */
@@ -109,25 +174,34 @@ export const isIndependent = (firstTry: boolean, help: Help) => firstTry && help
 export interface SessionConfig { trials: number; maxTrials: number; targets: number }
 export const DEFAULT_CONFIG: SessionConfig = { trials: 12, maxTrials: 15, targets: 3 };
 
-/** Sesión de 10–15 ensayos con 2–4 palabras objetivo mezcladas con conocidas (§4). */
+export function buildSpec(word: string, level: Level, rng: Rng, repeat = false, presentFirst = false): TrialSpec {
+  const options = level === 5 ? [word] : shuffle([word, ...distractors(word, level, rng)], rng);
+  return { word, level, cardType: cardTypeFor(level), picture: pictureFor(level), options, presentFirst, repeat };
+}
+
+/** Sesión con tutor de 12–15 ensayos con 2–4 palabras objetivo mezcladas con conocidas (§4). */
 export class Session {
   readonly targets: string[];
   readonly known: string[];
-  private queue: TrialSpec[] = [];
+  private queue: string[] = [];
   private done: { word: string; correct: boolean }[] = [];
   private presented = new Set<string>();
-  private lastSpec: TrialSpec | null = null;
+  private lastWord = '';
+  private level = new Map<string, Level>();
+  private fails = new Map<string, number>();
 
   constructor(private states: Map<string, WordState>, private rng: Rng = Math.random,
               readonly cfg: SessionConfig = DEFAULT_CONFIG, preferred: string[] = [],
-              readonly opts: SessionOptions = { knowsPictures: false }) {
-    const notMastered = DECK.map(w => w.id).filter(id => !states.get(id)?.mastered);
-    const ordered = [...preferred.filter(id => notMastered.includes(id)), ...notMastered.filter(id => !preferred.includes(id))];
+              readonly opts: SessionOptions = { knowsPictures: true }) {
+    const ids = DECK.map(w => w.id);
+    const open = ids.filter(id => !states.get(id)?.complete);
+    const ordered = [...preferred.filter(id => open.includes(id)), ...open.filter(id => !preferred.includes(id))];
     const t: string[] = [];
     for (const id of ordered) { if (t.length >= Math.min(4, Math.max(2, cfg.targets))) break; if (!t.some(x => similar(x, id))) t.push(id); }
-    this.targets = t.length ? t : shuffle(DECK.map(w => w.id), rng).slice(0, 2);
-    const mastered = DECK.map(w => w.id).filter(id => states.get(id)?.mastered);
-    this.known = mastered.length ? mastered : [...this.targets];
+    this.targets = t.length ? t : shuffle(ids, rng).slice(0, 2);
+    const known = ids.filter(id => states.get(id)?.mastered && !this.targets.includes(id));
+    this.known = known.length ? known : [...this.targets];
+    for (const id of ids) this.level.set(id, states.get(id)?.level ?? 1);
   }
 
   get count() { return this.done.length; }
@@ -135,47 +209,36 @@ export class Session {
     const last = this.done[this.done.length - 1];
     return this.done.length >= this.cfg.maxTrials || (this.done.length >= this.cfg.trials && !!last?.correct);
   }
-
-  /** 2 opciones al inicio; 3 cuando la palabra supera el 80 % de aciertos en la sesión (§3.2). */
-  optionCount(word: string): number {
-    const ts = this.done.filter(d => d.word === word);
-    return ts.length >= 2 && ts.filter(d => d.correct).length / ts.length > 0.8 ? 3 : 2;
-  }
+  levelOf(word: string): Level { return this.level.get(word) ?? 1; }
 
   private build(word: string, repeat = false): TrialSpec {
-    const level = this.states.get(word)?.level ?? 0;
-    const cardType = LEVELS[Math.min(level, LEVELS.length - 1)];
-    const n = this.optionCount(word);
-    const pool = shuffle(DECK.map(w => w.id).filter(id => id !== word && !similar(id, word)), this.rng);
-    const options = cardType === 'leer' ? [word] : shuffle([word, ...pool.slice(0, n - 1)], this.rng);
-    // D15: sin dibujo por defecto; la carta de enseñanza imagen + texto solo si se activó para el niño.
     const presentFirst = !this.opts.knowsPictures && !repeat && !this.presented.has(word) && !this.states.get(word)?.mastered;
     this.presented.add(word);
-    return { word, cardType, options, presentFirst, repeat };
+    return buildSpec(word, this.levelOf(word), this.rng, repeat, presentFirst);
   }
 
   next(): TrialSpec | null {
     if (this.finished) return null;
-    let spec = this.queue.shift();
-    if (!spec) {
-      const mustEndWell = this.done.length >= this.cfg.trials - 1;
-      const pickFrom = mustEndWell ? this.known : (this.rng() < 0.7 ? this.targets : this.known);
-      let candidates = pickFrom.filter(w => w !== this.lastSpec?.word);
-      if (!candidates.length) candidates = pickFrom;
-      spec = this.build(candidates[Math.floor(this.rng() * candidates.length)]);
-    }
-    this.lastSpec = spec;
-    return spec;
+    // Nunca la misma palabra dos veces seguidas (D16): la repetición tras error espera un ensayo.
+    const qi = this.queue.findIndex(w => w !== this.lastWord);
+    if (qi >= 0) { const [w] = this.queue.splice(qi, 1); this.lastWord = w; return this.build(w, true); }
+    const mustEndWell = this.done.length >= this.cfg.trials - 1;
+    const pickFrom = mustEndWell ? this.known : (this.rng() < 0.7 ? this.targets : this.known);
+    let c = pickFrom.filter(w => w !== this.lastWord);
+    if (!c.length) c = [...this.targets, ...this.known].filter(w => w !== this.lastWord);
+    if (!c.length) c = DECK.map(w => w.id).filter(w => w !== this.lastWord);
+    this.lastWord = c[Math.floor(this.rng() * c.length)];
+    return this.build(this.lastWord);
   }
 
-  /** Tras responder: si hubo ayuda o error, se repite la palabra sola (sin ayuda) y luego una conocida (§3.4). */
+  /** Tras un error se repite la palabra después de otra (§3.4); 2 fallos seguidos bajan un nivel ya en la sesión (D16). */
   record(spec: TrialSpec, correct: boolean) {
     this.done.push({ word: spec.word, correct });
-    if (!correct && !spec.repeat) {
-      this.queue.push(this.build(spec.word, true));
-      const k = this.known.filter(w => w !== spec.word);
-      this.queue.push(this.build((k.length ? k : this.known)[Math.floor(this.rng() * (k.length || this.known.length))]));
-    }
+    if (correct) { this.fails.set(spec.word, 0); return; }
+    const f = (this.fails.get(spec.word) ?? 0) + 1;
+    if (f >= DROP_FAILS) { this.fails.set(spec.word, 0); const l = this.levelOf(spec.word); if (l > 1) this.level.set(spec.word, (l - 1) as Level); }
+    else this.fails.set(spec.word, f);
+    if (!spec.repeat) this.queue.push(spec.word);
   }
 }
 
@@ -187,9 +250,9 @@ export class Session {
 export const nextHelp = (h: Help): Help => (h === 'ninguna' ? 'B' : 'C');
 
 export function toCSV(rows: TrialRecord[]): string {
-  const head = ['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps'];
+  const head = ['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps', 'level'];
   const esc = (v: unknown) => { const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  return [head.join(','), ...rows.map(r => [r.childId, r.sessionId, r.word, r.cardType, r.help, r.correct, r.latencyMs, new Date(r.at).toISOString(), r.mode ?? 'tutor', r.helps ?? ''].map(esc).join(','))].join('\n');
+  return [head.join(','), ...rows.map(r => [r.childId, r.sessionId, r.word, r.cardType, r.help, r.correct, r.latencyMs, new Date(r.at).toISOString(), r.mode ?? 'tutor', r.helps ?? '', r.level ?? ''].map(esc).join(','))].join('\n');
 }
 
 // ---------- D13: progreso por sesión ----------
@@ -215,37 +278,41 @@ export function progress(sessions: SessionRecord[], trials: TrialRecord[]): Sess
 
 export const INDEP_MIN = 3, INDEP_MAX = 5;
 export const clampIndepMinutes = (m: number) => Math.min(INDEP_MAX, Math.max(INDEP_MIN, Math.round(m) || 4));
+/** D16: el modo solo se abre con ≥3 palabras dominadas y termina a los 10 aciertos o a los 4 min. */
+export const INDEP_MIN_WORDS = 3, INDEP_GOAL = 10, INDEP_MINUTES = 4;
 
-/** Práctica sin tutor: solo palabras dominadas; sesión corta (3–5 min) que cierra sola. Ensayo «Toca donde dice…» (D15). */
+/**
+ * Práctica sin tutor (D13, D16): solo palabras dominadas (N4), en N4 (sin dibujo, «Toca donde dice…»,
+ * distractores parecidos). Nunca la misma palabra dos veces seguidas; posiciones al azar.
+ * Termina a los 10 aciertos o a los 4 min, lo que pase primero. N5 es solo con tutor.
+ */
 export class IndependentSession {
   readonly words: string[];
   readonly limitMs: number;
   private last = '';
-  private queue: TrialSpec[] = [];
+  private queue: string[] = [];
   count = 0;
-  constructor(states: Map<string, WordState>, private rng: Rng = Math.random, minutes = 4, readonly maxTrials = 30) {
+  correct = 0;
+  constructor(states: Map<string, WordState>, private rng: Rng = Math.random, readonly maxTrials = 30) {
     this.words = DECK.map(w => w.id).filter(id => states.get(id)?.mastered);
-    this.limitMs = clampIndepMinutes(minutes) * 60_000;
+    this.limitMs = INDEP_MINUTES * 60_000;
   }
-  get available() { return this.words.length > 0; }
-  private build(word: string, repeat = false): TrialSpec {
-    const n = this.words.length >= 6 ? 3 : 2;
-    // Distractores: otras palabras dominadas primero; si no alcanzan, del mazo (nunca parecidas).
-    const ok = (id: string) => id !== word && !similar(id, word);
-    const pool = [...shuffle(this.words.filter(ok), this.rng), ...shuffle(DECK.map(w => w.id).filter(id => ok(id) && !this.words.includes(id)), this.rng)];
-    return { word, cardType: 'elegir_texto', options: shuffle([word, ...pool.slice(0, n - 1)], this.rng), presentFirst: false, repeat };
-  }
-  /** null al agotar tiempo o ensayos, o si no hay palabras dominadas. */
+  get available() { return this.words.length >= INDEP_MIN_WORDS; }
+  done(elapsedMs: number) { return !this.available || elapsedMs >= this.limitMs || this.correct >= INDEP_GOAL || this.count >= this.maxTrials; }
+  /** null al terminar (10 aciertos, 4 min o tope de ensayos) o si no hay 3 palabras dominadas. */
   next(elapsedMs: number): TrialSpec | null {
-    if (!this.available || elapsedMs >= this.limitMs || this.count >= this.maxTrials) return null;
-    const q = this.queue.shift(); if (q) { this.last = q.word; return q; }
-    let c = this.words.filter(w => w !== this.last); if (!c.length) c = this.words;
-    this.last = c[Math.floor(this.rng() * c.length)];
-    return this.build(this.last);
+    if (this.done(elapsedMs)) return null;
+    const qi = this.queue.findIndex(w => w !== this.last);
+    let word: string, repeat = false;
+    if (qi >= 0) { word = this.queue.splice(qi, 1)[0]; repeat = true; }
+    else { const c = this.words.filter(w => w !== this.last); word = c[Math.floor(this.rng() * c.length)]; }
+    this.last = word;
+    return buildSpec(word, MASTERED_LEVEL, this.rng, repeat);
   }
   record(spec: TrialSpec, correct: boolean) {
     this.count++;
-    if (!correct && !spec.repeat) this.queue.push(this.build(spec.word, true));
+    if (correct) this.correct++;
+    else if (!spec.repeat) this.queue.push(spec.word);
   }
 }
 

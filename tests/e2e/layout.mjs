@@ -27,11 +27,12 @@ try {
     await p.goto(`http://localhost:5181/?semilla`);
     await p.click('#d'); await p.waitForSelector('#start'); await p.click('#start');
     const seen = new Set(); let n = 0;
-    while (n++ < 80 && !['leer', 'elegir2', 'elegir3'].every(k => seen.has(k))) {
+    while (n++ < 80 && !['leer', 'dibujo2', 'dibujo3', 'sin-dibujo3'].every(k => seen.has(k))) {
       await p.waitForSelector('#go, #again:not([disabled]), #home', { timeout: 20000 });
       if (await p.$('#home')) break;
       if (await p.$('#go')) { await p.click('#go'); continue; }
-      const kind = await p.evaluate(() => document.querySelector('#rok') ? 'leer' : `elegir${document.querySelectorAll('.opt').length}`);
+      // D16: N1 = dibujo + 2 opciones, N2/N3 = dibujo + 3, N4 = sin dibujo + 3, N5 = leer.
+      const kind = await p.evaluate(() => document.querySelector('#rok') ? 'leer' : `${document.querySelector('.stim') ? 'dibujo' : 'sin-dibujo'}${document.querySelectorAll('.opt').length}`);
       const label = `${width}x${height} ${kind}`;
       await check(p, label);
       if (!seen.has(kind)) {
@@ -50,16 +51,16 @@ try {
         }
       }
       const word = await p.$eval('#model .word', e => e.textContent);
-      if (kind === 'leer') await p.click('#rok');
+      if (kind === 'leer') { await p.click('#rok'); await p.waitForSelector('#model.feedback:not([hidden])'); await check(p, `${label} retroalimentación`); }
       else {
         await p.click(`.opt[aria-label="${word}"]`);
         await p.waitForSelector('.opt.ok');
         await check(p, `${label} retroalimentación`);
-        if (process.env.SHOTS && !seen.has('fb')) { seen.add('fb'); await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-acierto.png` }); }
+        if (process.env.SHOTS && !seen.has('fb' + kind)) { seen.add('fb' + kind); await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}-acierto.png` }); }
       }
       await p.waitForTimeout(300);
     }
-    for (const k of ['leer', 'elegir2', 'elegir3']) if (!seen.has(k)) fails.push(`${width}x${height}: no se llegó a ${k}`);
+    for (const k of ['leer', 'dibujo2', 'dibujo3', 'sin-dibujo3']) if (!seen.has(k)) fails.push(`${width}x${height}: no se llegó a ${k}`);
     await p.close();
   }
 } finally { await browser.close(); await server.close(); }
