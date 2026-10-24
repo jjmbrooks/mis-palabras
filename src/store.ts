@@ -20,6 +20,7 @@ export interface Store {
   trials(childId?: string): Promise<TrialRecord[]>;
   addTrial(t: TrialRecord): Promise<void>;
   exportAll(): Promise<{ children: Child[]; trials: TrialRecord[] }>;
+  deleteChild(childId: string): Promise<void>;
   deleteEverything(): Promise<void>;
   signOut(): Promise<void>;
 }
@@ -39,6 +40,10 @@ export function demoStore(): Store {
     trials: async id => ts.filter(t => !id || t.childId === id),
     addTrial: async t => { ts.push(t); },
     exportAll: async () => ({ children: kids, trials: ts }),
+    deleteChild: async id => {
+      for (let i = ts.length - 1; i >= 0; i--) if (ts[i].childId === id) ts.splice(i, 1);
+      const k = kids.findIndex(c => c.id === id); if (k >= 0) kids.splice(k, 1);
+    },
     deleteEverything: async () => { ts.length = 0; },
     signOut: async () => {},
   };
@@ -84,6 +89,16 @@ export function familyStore(user: User): Store {
     async exportAll() {
       const { k, t } = await all();
       return { children: k.docs.map(d => ({ id: d.id, nickname: d.data().nickname })), trials: t.docs.map(d => toTrial(d.data())) };
+    },
+    async deleteChild(childId) {
+      // Borra los ensayos de ese niño y su perfil; no toca otros perfiles ni la cuenta.
+      const t = await getDocs(query(trialsCol(), where('childId', '==', childId)));
+      const refs = [...t.docs.map(d => d.ref), doc(kidsCol(), childId)];
+      for (let i = 0; i < refs.length; i += 400) {
+        const b = writeBatch(fs());
+        refs.slice(i, i + 400).forEach(r => b.delete(r));
+        await b.commit(); // requiere conexión: se espera la confirmación del servidor
+      }
     },
     async deleteEverything() {
       const { k, t } = await all();
