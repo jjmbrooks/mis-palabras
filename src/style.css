@@ -50,3 +50,9 @@ table { border-collapse:collapse; width:100%; font-size:1rem; } td, th { text-al
 .reduce-motion *, .reduce-motion *::before { animation:none !important; transition:none !important; }
 .reduce-motion .opt.ok { transform:none; }
 @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
+
+/* D12: estímulo solo imagen, lectura sola y botón de ayuda */
+.stim .pic { width: min(52vw, 220px); margin: 0 auto; }
+.card.read { margin: 0 auto; padding: 1.2rem 2rem; cursor: default; }
+.help-b { margin: 1rem auto 0; display: block; }
+.cue { font-size: .85rem; margin: 0 auto .5rem; display: block; }

@@ -6,7 +6,7 @@ const firebase = require('firebase/compat/app');
 
 let env;
 const now = () => firebase.firestore.Timestamp.now();
-const trial = () => ({ childId: 'k1', sessionId: 's1', word: 'miel', cardType: 'imagen_texto', help: 'ninguna', correct: true, latencyMs: 1200, at: now() });
+const trial = () => ({ childId: 'k1', sessionId: 's1', word: 'miel', cardType: 'imagen_estimulo', help: 'ninguna', correct: true, latencyMs: 1200, at: now() });
 const kid = () => ({ nickname: 'Abejita', createdAt: now() });
 const fam = uid => env.authenticatedContext(uid).firestore();
 
