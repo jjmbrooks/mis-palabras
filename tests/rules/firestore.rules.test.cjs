@@ -79,7 +79,7 @@ describe('firestore.rules', () => {
     await assertSucceeds(db.doc('families/famA/sessions/s1').set(sess()));
     await assertSucceeds(db.collection('families/famA/sessions').where('childId', '==', 'k1').get());
     await assertSucceeds(db.doc('families/famA/trials/t9').set({ ...trial(), mode: 'independiente', helps: 1 }));
-    await assertSucceeds(db.doc('families/famA/trials/t10').set({ ...trial(), mode: 'tutor', level: 4 }));
+    await assertSucceeds(db.doc('families/famA/trials/t10').set({ ...trial(), mode: 'tutor', level: 4, miss: true }));
     await assertFails(db.doc('families/famA/sessions/s1').update({ trials: 9 }));
     await assertSucceeds(db.doc('families/famA/sessions/s1').delete());
   });
@@ -103,6 +103,7 @@ describe('firestore.rules', () => {
     await assertFails(db.doc('families/famA/trials/t1').set({ ...trial(), helps: 11 }));
     await assertFails(db.doc('families/famA/trials/t1').set({ ...trial(), level: 6 }));
     await assertFails(db.doc('families/famA/trials/t1').set({ ...trial(), level: 0 }));
+    await assertFails(db.doc('families/famA/trials/t1').set({ ...trial(), miss: 'si' }));
   });
   it('todo lo demás está negado', async () => {
     const db = fam('famA');

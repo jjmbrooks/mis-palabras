@@ -22,6 +22,7 @@ export interface TrialRecord {
   at: number; // fecha y hora (ms epoch)
   mode?: Mode; // D13; ausente en ensayos anteriores = tutor
   helps?: number; // D13: cuántas ayudas se activaron en el ensayo
+  miss?: boolean; // D16: la primera respuesta fue incorrecta (pedir Ayuda o esperar no es fallo)
   level?: Level; // D16: nivel N1–N5 con el que se presentó; ausente en ensayos anteriores a D16
 }
 
@@ -82,10 +83,13 @@ function legacyLevel(trials: TrialRecord[]): Level {
     if (hi >= 2) { hi = 0; if (level === 1) done = true; else level++; }
     else if (lo >= 2) { lo = 0; done = false; if (level > 0) level--; }
   }
-  // Migración (D16): el nivel «elegir» de antes era dibujo + palabra dicha = N1; quien ya pasó a «leer»
-  // eligió bien entre palabras escritas muchas veces → N4 (dominada); quien ya leía sola → N5 superado.
-  return done ? 5 : level === 1 ? 4 : 1;
+  // Migración conservadora (D16, revisión de Diversa): «elegir» → N1; ya en «leer» → N3 (no dominada);
+  // «leer» superado → N4 SIN dominio: se verifica con el criterio nuevo (2 sesiones ≥90 % en N4), no se hereda.
+  return done ? 4 : level === 1 ? 3 : 1;
 }
+
+/** Fallo al primer intento: la primera respuesta fue incorrecta. Ensayos sin `miss` (anteriores) = no acertado y sin ayuda pedida antes. */
+export const isFirstTryMiss = (t: Pick<TrialRecord, 'correct' | 'miss' | 'help'>) => t.miss ?? (!t.correct && t.help !== 'ninguna');
 
 /** Nivel de cada palabra a partir del historial (D16). La práctica independiente no cuenta (D5/D13). */
 export function wordStates(history: TrialRecord[]): Map<string, WordState> {
@@ -95,7 +99,8 @@ export function wordStates(history: TrialRecord[]): Map<string, WordState> {
     const trials = sorted.filter(t => t.word === w.id);
     const legacy = trials.filter(t => t.level === undefined);
     let level: Level = legacy.length ? legacyLevel(legacy) : 1;
-    let complete = legacy.length > 0 && level === 5; // ya leía sola con el sistema anterior
+    let complete = false; // nunca se hereda
+    let verified = !legacy.length || level < MASTERED_LEVEL; // N4 migrado: falta verificar el dominio
     let hi = 0, fails = 0;
     const sessions: string[] = [];
     const fresh = trials.filter(t => t.level !== undefined);
@@ -104,18 +109,23 @@ export function wordStates(history: TrialRecord[]): Map<string, WordState> {
       let n = 0, ok = 0, dropped = false;
       for (const t of fresh.filter(x => x.sessionId === s)) {
         if (t.level !== level) continue;
-        n++; if (t.correct) { ok++; fails = 0; } else if (++fails >= DROP_FAILS) {
+        n++;
+        if (t.correct) { ok++; fails = 0; continue; }
+        // Para bajar solo cuentan los fallos al primer intento (no pedir Ayuda ni esperar).
+        if (!isFirstTryMiss(t)) continue;
+        if (++fails >= DROP_FAILS) {
           fails = 0; hi = 0; complete = false; dropped = true;
           if (level > 1) level = (level - 1) as Level;
+          if (level < MASTERED_LEVEL) verified = true;
           n = 0; ok = 0;
         }
       }
       if (dropped || !n) { if (dropped) hi = 0; continue; }
       if (ok / n >= MASTER) {
-        if (++hi >= 2) { hi = 0; if (level === MAX_LEVEL) complete = true; else level = (level + 1) as Level; }
+        if (++hi >= 2) { hi = 0; verified = true; if (level === MAX_LEVEL) complete = true; else level = (level + 1) as Level; }
       } else hi = 0;
     }
-    out.set(w.id, { level, mastered: level >= MASTERED_LEVEL, complete });
+    out.set(w.id, { level, mastered: level >= MASTERED_LEVEL && verified, complete });
   }
   return out;
 }
@@ -232,13 +242,14 @@ export class Session {
   }
 
   /** Tras un error se repite la palabra después de otra (§3.4); 2 fallos seguidos bajan un nivel ya en la sesión (D16). */
-  record(spec: TrialSpec, correct: boolean) {
+  record(spec: TrialSpec, correct: boolean, miss = !correct) {
     this.done.push({ word: spec.word, correct });
     if (correct) { this.fails.set(spec.word, 0); return; }
+    if (!spec.repeat) this.queue.push(spec.word);
+    if (!miss) return; // con Ayuda pero sin fallo: se repite, no baja
     const f = (this.fails.get(spec.word) ?? 0) + 1;
     if (f >= DROP_FAILS) { this.fails.set(spec.word, 0); const l = this.levelOf(spec.word); if (l > 1) this.level.set(spec.word, (l - 1) as Level); }
     else this.fails.set(spec.word, f);
-    if (!spec.repeat) this.queue.push(spec.word);
   }
 }
 
@@ -250,9 +261,9 @@ export class Session {
 export const nextHelp = (h: Help): Help => (h === 'ninguna' ? 'B' : 'C');
 
 export function toCSV(rows: TrialRecord[]): string {
-  const head = ['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps', 'level'];
+  const head = ['childId', 'sessionId', 'word', 'cardType', 'help', 'correct', 'latencyMs', 'at', 'mode', 'helps', 'level', 'miss'];
   const esc = (v: unknown) => { const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  return [head.join(','), ...rows.map(r => [r.childId, r.sessionId, r.word, r.cardType, r.help, r.correct, r.latencyMs, new Date(r.at).toISOString(), r.mode ?? 'tutor', r.helps ?? '', r.level ?? ''].map(esc).join(','))].join('\n');
+  return [head.join(','), ...rows.map(r => [r.childId, r.sessionId, r.word, r.cardType, r.help, r.correct, r.latencyMs, new Date(r.at).toISOString(), r.mode ?? 'tutor', r.helps ?? '', r.level ?? '', r.miss ?? ''].map(esc).join(','))].join('\n');
 }
 
 // ---------- D13: progreso por sesión ----------

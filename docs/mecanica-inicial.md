@@ -70,12 +70,12 @@ Jerarquía de ayuda (D12):
 
 | Nivel | Ayuda |
 |---|---|
-| B | Aparece la carta **imagen + texto** de la palabra, como ayuda para comparar. |
-| C | Si vuelve a fallar: el tutor guía directamente y solo queda habilitada la opción correcta. |
+| B | **Corrección sin error (revisión D16):** aparece la carta **imagen + texto** como modelo (también en N4 y N5, que no tienen dibujo en el ensayo), **se resalta la opción correcta** y **solo esa queda activa**; las demás se apagan. El niño toca la correcta comparándola con el modelo. En N5 el modelo muestra el dibujo y la palabra y el tutor vuelve a marcar. |
+| C | Si sigue sin responder (modo tutor): aviso para que el tutor guíe directamente. |
 
-(El nivel A anterior, resaltar la opción correcta, se retira: daba la respuesta sin pasar por el texto. Queda solo para leer historiales antiguos.)
+(D12 había retirado el resaltado porque solo, sin el modelo, daba la respuesta sin pasar por el texto. En D16 vuelve **junto con** la carta modelo imagen + texto: el niño ve la palabra escrita completa al lado de la opción resaltada, y ese ensayo no cuenta como acierto independiente.)
 
-Después de una respuesta con ayuda, se intercala **otra palabra** y luego **se repite la palabra**, sin ayuda inicial. Desde D16 nunca va la misma palabra dos veces seguidas (§3.8). **Solo esa repetición sin ayuda cuenta como acierto independiente**: el ensayo con ayuda se registra como no independiente.
+Después de una respuesta con ayuda, se intercala **otra palabra** y luego **se repite la palabra**, sin ayuda inicial. Desde D16 nunca va la misma palabra dos veces seguidas (§3.8). **Solo esa repetición sin ayuda cuenta como acierto independiente**: el ensayo con ayuda se registra como no independiente. Se guarda aparte si la **primera respuesta fue incorrecta** (`miss`): pedir Ayuda o esperar no es un fallo (§5).
 
 **Por qué (D12):** si la imagen estuviera siempre visible, el acierto no demostraría lectura (Didden et al., 2000; §2.1).
 
@@ -110,7 +110,7 @@ Era un ajuste por mazo y por niño para saltar la carta de enseñanza imagen + t
 2. **Texto ajustado al ancho.** Cada palabra calcula su tamaño con el ancho de su tarjeta (`cqi`) y su número de letras (`--n`), con un tope. Así ninguna palabra se corta, MARIPOSA incluida.
 3. **Ensayo por defecto (N1–N3 desde D16, §5):** se ve el dibujo, la voz dice «Toca donde dice MIEL» (D14, botón 🔊) y el niño elige entre 2–3 palabras escritas. Tras acertar queda solo la palabra correcta junto al dibujo.
 4. **Se elimina el ensayo dibujo → palabra (`imagen_estimulo`)** como tipo aparte, junto con la frase «Toca la palabra de este dibujo» y cualquier opción por niño. Tipos de carta: `elegir_texto` y `leer`; los niveles N1–N5 se definen en §5 (D16).
-5. **Migración de historiales:** los ensayos `imagen_estimulo` e `imagen_texto` cuentan como `elegir_texto`, porque en ambos el niño ve el dibujo y elige entre palabras escritas. `emparejar` → `elegir_texto` y `solo_texto` → `leer`. No se borra ni reescribe nada en la nube; la equivalencia se aplica al leer. Una palabra que ya había pasado el nivel de dibujo queda en `elegir_texto` o más arriba, según sus ensayos.
+5. **Migración de historiales (D15; D16 la sustituye por la de §5):** los ensayos `imagen_estimulo` e `imagen_texto` cuentan como `elegir_texto`, porque en ambos el niño ve el dibujo y elige entre palabras escritas. `emparejar` → `elegir_texto` y `solo_texto` → `leer`. No se borra ni reescribe nada en la nube; la equivalencia se aplica al leer. Una palabra que ya había pasado el nivel de dibujo queda en `elegir_texto` o más arriba, según sus ensayos.
 
 **Por qué.**
 - **Dibujo y palabra dicha juntos.** Brooks pidió conservar el dibujo porque motiva al niño. Con la palabra dicha, el dibujo ya no es la clave de la respuesta: el niño sabe qué palabra buscar por la voz y tiene que encontrarla **entre palabras escritas**. Esa elección es la práctica de lectura (emparejar palabra hablada con palabra escrita; Browder et al., 2009; Spector, 2011; evidencia §2).
@@ -153,10 +153,10 @@ En N4 y N5 el dibujo aparece **después de acertar**, como retroalimentación. E
 | Decisión | Por qué |
 |---|---|
 | **Sube** un nivel con **≥ 90 % al primer intento, sin ayuda, en 2 sesiones seguidas** en ese nivel. Superar N5 así marca la palabra como «lee sola» y deja de ser objetivo. | Mejor retención con criterio de 90 % (Fuller y Fienup, 2018; evidencia §2). Las sesiones consecutivas son práctica común poco estudiada. |
-| **Baja** un nivel tras **2 fallos seguidos** de la palabra en su nivel, ya dentro de la misma sesión. | Aprendizaje sin error: no dejar que el niño practique el error, y volver pronto a condiciones con más apoyo (Mueller et al., 2007; Buckley y Bird, 1993, sensibilidad al fracaso). Que basten 2 fallos es *inferencia de diseño*. |
+| **Baja** un nivel tras **2 fallos al primer intento seguidos** de la palabra en su nivel, ya dentro de la misma sesión. Pedir «Ayuda» o dejar pasar el tiempo **no** cuenta como fallo ni rompe la racha; un acierto sí la reinicia. | Aprendizaje sin error: no dejar que el niño practique el error, y volver pronto a condiciones con más apoyo (Mueller et al., 2007; Buckley y Bird, 1993, sensibilidad al fracaso). Que basten 2 fallos es *inferencia de diseño*. |
 | Orden: primero **pocas opciones muy distintas**, luego **más opciones**, luego **distractores parecidos**, luego **sin dibujo** y al final **leer en voz alta**. Se quita un apoyo por nivel. | Retiro gradual de apoyos y discriminación de fácil a difícil (Browder et al., 2006; Spector, 2011; evidencia §2). Los distractores parecidos se introducen después (Buckley y Bird, 1993). Con opciones muy distintas el niño podría acertar por la longitud o la primera letra; por eso N3 las iguala, y el acierto exige mirar la palabra entera. *Inferencia de diseño* para los criterios concretos de «distinta» y «parecida». |
 | **Dominada = N4.** En N4 el niño elige la palabra escrita que oye, sin dibujo y entre palabras parecidas: eso ya es lectura de palabra a la vista. N5 (decirla en voz alta) se trabaja solo con tutor porque requiere que un adulto juzgue la respuesta. | Emparejar palabra hablada con escrita y seleccionar antes de nombrar (Buckley y Bird, 1993; Browder et al., 2009). |
-| **Migración de historiales sin nivel** (anteriores a D16): se calcula el estado con la regla anterior y se traduce. «Elegir» (con dibujo) → **N1**; ya en «leer» → **N4** (dominada); ya superado «leer» → **N5 superado**. Los ensayos nuevos guardan su nivel (`level`, 1–5) y continúan desde ahí. No se reescribe nada en la nube. | El antiguo «elegir» era dibujo + palabra dicha con 2–3 opciones, lo más parecido a N1. Quien pasó a «leer» ya había elegido bien entre palabras escritas en 2 sesiones, así que conserva su dominio y no pierde progreso. |
+| **Migración conservadora de historiales sin nivel** (anteriores a D16, revisión de Diversa): «elegir» (con dibujo) → **N1**; ya en «leer» → **N3** (no dominada); «leer» superado → **N4 sin dominio**. **El dominio no se hereda:** se verifica con el criterio nuevo (2 sesiones seguidas ≥ 90 % en N4), y hasta entonces la palabra no cuenta para «Practicar solo». Los ensayos nuevos guardan `level` (1–5) y `miss`. No se reescribe nada en la nube. | Los criterios anteriores (opciones sin distractores parecidos, umbral de bajada distinto) no garantizan lo que hoy exige N3 y N4. Empezar un poco abajo cuesta pocas sesiones a quien ya lee y evita dar por dominada una palabra que el niño adivinaba por la longitud. *Inferencia de diseño.* |
 | Las palabras dominadas pasan a **repaso espaciado** (p. ej., a los 2, 7 y 21 días). | Mantenimiento medido de forma espaciada (Fuller y Fienup, 2018; evidencia §2). Intervalos concretos: *inferencia de diseño*. |
 | Comprobación final con **tarjetas físicas** y el tutor, que la registra en la app. | Generalización fuera de la app (Spector, 2011; Buckley y Bird, 1993; evidencia §2). |
 
@@ -198,6 +198,7 @@ Se registra solo lo necesario para decidir dominio y ayudas:
 | palabra | MIEL |
 | tipo de carta | elegir_texto / leer (historiales antiguos pueden traer imagen_estimulo) |
 | nivel (D16) | 1–5 (ausente en ensayos anteriores a D16) |
+| fallo al primer intento (D16) | sí / no (`miss`; pedir Ayuda no es fallo) |
 | nivel de ayuda | ninguna / B / C |
 | acierto al primer intento | sí / no |
 | latencia (ms) | 2300 |

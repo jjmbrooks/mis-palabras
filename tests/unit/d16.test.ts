@@ -6,7 +6,7 @@ import { DECK, wordById } from '../../src/deck';
 const seeded = (s = 1) => () => ((s = (s * 16807) % 2147483647) / 2147483647);
 let clock = 0;
 const t = (word: string, sessionId: string, correct: boolean, level?: Level, cardType: TrialRecord['cardType'] = level === 5 ? 'leer' : 'elegir_texto'): TrialRecord =>
-  ({ childId: 'c', sessionId, word, cardType, help: correct ? 'ninguna' : 'B', correct, latencyMs: 900, at: ++clock, mode: 'tutor', level });
+  ({ childId: 'c', sessionId, word, cardType, help: correct ? 'ninguna' : 'B', correct, latencyMs: 900, at: ++clock, mode: 'tutor', level, miss: !correct });
 /** n sesiones perfectas por nivel hasta llegar a `to` (3 ensayos por sesión). */
 const climb = (word: string, to: Level) => {
   const out: TrialRecord[] = [];
@@ -47,14 +47,34 @@ describe('D16: niveles y avance', () => {
     const solo = climb('nube', 4).map(x => ({ ...x, mode: 'independiente' as const }));
     expect(wordStates(solo).get('nube')!.level).toBe(1);
   });
-  it('migra historiales sin nivel: elegir → N1, ya en leer → N4 (dominada), ya leía sola → N5 superado', () => {
+  it('migra historiales sin nivel de forma conservadora: elegir → N1, leer → N3, leer superado → N4 sin dominio', () => {
     const old = (w: string, kinds: TrialRecord['cardType'][]) => kinds.map((c, i) => ({ ...t(w, `${w}o${i}`, true), cardType: c, level: undefined, mode: undefined }));
-    expect(wordStates(old('miel', ['imagen_estimulo'])).get('miel')!.level).toBe(1);
-    expect(wordStates(old('miel', ['imagen_estimulo', 'elegir_texto'])).get('miel')).toMatchObject({ level: 4, mastered: true });
-    expect(wordStates(old('sol', ['imagen_texto', 'emparejar', 'leer', 'solo_texto'])).get('sol')).toMatchObject({ level: 5, complete: true });
-    // y sigue avanzando con ensayos nuevos desde el nivel migrado
-    const cont = [...old('flor', ['elegir_texto', 'elegir_texto']), t('flor', 'n1', true, 4), t('flor', 'n2', true, 4)];
-    expect(wordStates(cont).get('flor')!.level).toBe(5);
+    expect(wordStates(old('miel', ['imagen_estimulo'])).get('miel')).toMatchObject({ level: 1, mastered: false });
+    expect(wordStates(old('miel', ['imagen_estimulo', 'elegir_texto'])).get('miel')).toMatchObject({ level: 3, mastered: false });
+    const done = old('sol', ['imagen_texto', 'emparejar', 'leer', 'solo_texto']);
+    expect(wordStates(done).get('sol')).toMatchObject({ level: 4, mastered: false, complete: false });
+    // El dominio se verifica con el criterio nuevo: 2 sesiones ≥90 % en N4.
+    const one = [...done, t('sol', 'v1', true, 4), t('sol', 'v1', true, 4)];
+    expect(wordStates(one).get('sol')!.mastered).toBe(false);
+    expect(wordStates([...one, t('sol', 'v2', true, 4)]).get('sol')).toMatchObject({ level: 5, mastered: true });
+    // y quien estaba en leer sigue desde N3
+    const cont = [...old('flor', ['elegir_texto', 'elegir_texto']), t('flor', 'n1', true, 3), t('flor', 'n2', true, 3)];
+    expect(wordStates(cont).get('flor')).toMatchObject({ level: 4, mastered: true });
+    // un N4 migrado sin verificar no abre «Practicar solo»
+    expect(new IndependentSession(wordStates([...done, ...old('miel', ['imagen_texto','emparejar','leer','solo_texto']), ...old('flor', ['imagen_texto','emparejar','leer','solo_texto'])])).available).toBe(false);
+  });
+  it('para bajar solo cuentan los fallos al primer intento (pedir Ayuda o esperar no)', () => {
+    const helpOnly = (sid: string): TrialRecord => ({ ...t('flor', sid, false, 3), help: 'B', miss: false });
+    const missed = (sid: string): TrialRecord => ({ ...t('flor', sid, false, 3), help: 'B', miss: true });
+    const base = climb('flor', 3);
+    expect(wordStates([...base, helpOnly('x'), helpOnly('x'), helpOnly('x')]).get('flor')!.level).toBe(3);
+    expect(wordStates([...base, missed('x'), helpOnly('x'), missed('x')]).get('flor')!.level).toBe(2);
+    expect(wordStates([...base, missed('x'), t('flor', 'x', true, 3), missed('x')]).get('flor')!.level).toBe(3);
+    const s = new Session(states({ abeja: 3 }), seeded(4), undefined, ['abeja']);
+    s.record(buildSpec('abeja', 3, seeded(1)), false, false); s.record(buildSpec('abeja', 3, seeded(1)), false, false);
+    expect(s.levelOf('abeja')).toBe(3);
+    s.record(buildSpec('abeja', 3, seeded(1)), false, true); s.record(buildSpec('abeja', 3, seeded(1)), false, true);
+    expect(s.levelOf('abeja')).toBe(2);
   });
 });
 

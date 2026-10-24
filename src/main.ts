@@ -212,7 +212,7 @@ async function session(mode: Mode) {
   // Práctica sola: la sesión se cierra sola al cumplirse el tiempo (D13).
   const autoClose = indep ? window.setTimeout(() => { stop = true; $('#end')?.click(); }, limit) : undefined;
 
-  function trial(spec: TrialSpec): Promise<{ help: Help; helps: number; correct: boolean; latency: number }> {
+  function trial(spec: TrialSpec): Promise<{ help: Help; helps: number; correct: boolean; miss: boolean; latency: number }> {
     return new Promise(resolve => {
       const w = wordById(spec.word);
       let helps = 0;
@@ -236,9 +236,12 @@ async function session(mode: Mode) {
               `<button class="card opt" data-id="${o}" disabled aria-label="${wordById(o).text}">${card(o, 'text')}</button>`).join('')}</div>`}
         <button class="btn help-b" id="help" disabled>Ayuda</button>`;
       const buttons = [...app.querySelectorAll<HTMLButtonElement>('.opt')];
+      let miss = false; // la primera respuesta fue incorrecta (D16: solo esto cuenta para bajar de nivel)
+      // Corrección sin error (D12/D16): tras un error o «Ayuda» se muestra el modelo (dibujo + palabra, también en
+      // N4 y N5, que no tienen dibujo), se resalta la opción correcta y solo esa queda activa. Luego se repite el ensayo.
       const escalate = () => {
         help = solo ? 'B' : nextHelp(help); helps++;
-        if (solo) buttons.forEach(b => { if (b.dataset.id !== spec.word) b.disabled = true; }); // sin tutor: ayuda sin error
+        buttons.forEach(b => { if (b.dataset.id !== spec.word) { b.disabled = true; b.classList.add('off'); } else b.classList.add('modelo'); });
         $('#model').hidden = false; $('#help').hidden = true; // ayuda = carta imagen + texto
         if (help === 'C') {
           $('#tutor').hidden = false; $('#help').hidden = true;
@@ -260,7 +263,7 @@ async function session(mode: Mode) {
         }
         await Promise.all([say(ok ? `¡${w.text}, muy bien!` : w.text), ok ? sleep(900) : Promise.resolve()]);
         // el audio de la palabra solo llega después de responder
-        resolve({ help, helps, correct, latency: firstTap - t0 });
+        resolve({ help, helps, correct, miss, latency: firstTap - t0 });
       };
       $('#again').onclick = () => { if (!$('#again').hasAttribute('disabled')) void say(instr); };
       // Se lee la instrucción (nunca la palabra) y luego hay una breve demora antes de habilitar.
@@ -270,15 +273,15 @@ async function session(mode: Mode) {
       $('#help').onclick = () => { if (enabled && help === 'ninguna') escalate(); };
       if (reading) {
         $('#rok').onclick = () => { if (!enabled) return; firstTap ||= Date.now(); void finish(true); };
-        $('#rno').onclick = () => { if (!enabled) return; firstTap ||= Date.now(); firstTry = false; if (help === 'C') void finish(false); else escalate(); };
+        $('#rno').onclick = () => { if (!enabled) return; firstTap ||= Date.now(); if (firstTry && help === 'ninguna') miss = true; firstTry = false; if (help === 'C') void finish(false); else escalate(); };
       }
       buttons.forEach(b => b.onclick = async () => {
         if (!enabled) return;
         firstTap ||= Date.now();
-        if (b.dataset.id !== spec.word) { firstTry = false; escalate(); return; } // sin sonido negativo
+        if (b.dataset.id !== spec.word) { if (firstTry && help === 'ninguna') miss = true; firstTry = false; escalate(); return; } // sin sonido negativo
         b.classList.add('ok'); void finish(true);
       });
-      $('#end').addEventListener('click', () => { clearTimeout(timer); resolve({ help, helps, correct: false, latency: -1 }); }, { once: true });
+      $('#end').addEventListener('click', () => { clearTimeout(timer); resolve({ help, helps, correct: false, miss: false, latency: -1 }); }, { once: true });
     });
   }
 
@@ -288,10 +291,10 @@ async function session(mode: Mode) {
     if (spec.presentFirst) { await present(spec.word); if (stop) break; }
     const r = await trial(spec);
     if (r.latency < 0) break;
-    indep ? indep.record(spec, r.correct) : sess!.record(spec, r.correct);
+    indep ? indep.record(spec, r.correct) : sess!.record(spec, r.correct, r.miss);
     practiced.add(spec.word); n++;
     const rec: TrialRecord = { childId: c.id, sessionId, word: spec.word, cardType: spec.cardType, help: r.help,
-      correct: r.correct, latencyMs: Math.max(0, Math.min(600000, r.latency)), at: Date.now(), mode, helps: Math.min(10, r.helps), level: spec.level };
+      correct: r.correct, latencyMs: Math.max(0, Math.min(600000, r.latency)), at: Date.now(), mode, helps: Math.min(10, r.helps), level: spec.level, miss: r.miss };
     await s.addTrial(rec);
   }
   clearTimeout(autoClose);

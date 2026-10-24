@@ -44,7 +44,12 @@ try {
           await check(p, `${label} MARIPOSA`);
           if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}-mariposa.png` });
           // Con la Ayuda visible (dibujo + palabra modelo) también debe caber.
-          await p.click('#help'); await p.waitForTimeout(200);
+          // Corrección sin error: un error resalta la correcta como modelo, deja solo esa activa y muestra dibujo + palabra.
+          const wrong = await p.$$eval('.opt', (bs, w) => bs.findIndex(b => b.getAttribute('aria-label') !== w), await p.$eval('#model .word', e => e.textContent));
+          await p.locator('.opt').nth(wrong).click(); await p.waitForTimeout(200);
+          const fix = await p.evaluate(() => ({ active: [...document.querySelectorAll('.opt:not([disabled])')].map(b => b.className),
+            pic: !!document.querySelector('#model:not([hidden]) .pic svg') }));
+          if (fix.active.length !== 1 || !fix.active[0].includes('modelo') || !fix.pic) fails.push(`${label} corrección sin error: ${JSON.stringify(fix)}`);
           await check(p, `${label} ayuda`);
           if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}-ayuda.png` });
           await p.reload(); await p.click('#d'); await p.waitForSelector('#start'); await p.click('#start'); continue;

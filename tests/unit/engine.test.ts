@@ -33,13 +33,13 @@ describe('sesión', () => {
 });
 
 describe('dominio', () => {
-  it('se domina tras el nivel solo texto', () => {
+  it('historial antiguo con «leer» superado: N4 sin dominio heredado (D16)', () => {
     const h = ['imagen_texto', 'imagen_texto', 'emparejar', 'emparejar', 'solo_texto', 'solo_texto']
       .map((c, i) => tr('sol', 's' + i, true, i, c as TrialRecord['cardType']));
-    expect(wordStates(h).get('sol')!.mastered).toBe(true);
+    expect(wordStates(h).get('sol')).toMatchObject({ level: 4, mastered: false });
   });
   it('ayuda D12: ninguna → imagen + texto (B) → tutor (C)', () => { expect([nextHelp('ninguna'), nextHelp('B'), nextHelp('C')]).toEqual(['B','C','C']); });
-  it('CSV con cabecera y escape', () => { expect(toCSV([tr('miel','s',true,0)]).split('\n')[0]).toBe('childId,sessionId,word,cardType,help,correct,latencyMs,at,mode,helps,level'); });
+  it('CSV con cabecera y escape', () => { expect(toCSV([tr('miel','s',true,0)]).split('\n')[0]).toBe('childId,sessionId,word,cardType,help,correct,latencyMs,at,mode,helps,level,miss'); });
 });
 
 describe('D12: solo texto por defecto', () => {
@@ -71,8 +71,9 @@ describe('D12: solo texto por defecto', () => {
 import { IndependentSession, progress, clampIndepMinutes, SessionRecord } from '../../src/engine';
 import { FACTS, rewardFact } from '../../src/facts';
 
-const masteredHist = (words: string[]) => words.flatMap(w => ['imagen_estimulo','imagen_estimulo','elegir_texto','elegir_texto','leer','leer']
-  .map((c, i) => tr(w, 'm' + i, true, i, c as TrialRecord['cardType'])));
+// D16: dominada = llegó a N4 con el criterio nuevo (2 sesiones perfectas en N1, N2 y N3).
+const masteredHist = (words: string[]) => words.flatMap(w => [1, 1, 2, 2, 3, 3]
+  .map((l, i) => ({ ...tr(w, 'm' + i, true, i, 'elegir_texto'), mode: 'tutor' as const, level: l as 1 | 2 | 3 })));
 
 describe('D13: registro y progreso', () => {
   const ses = (id: string, startedAt: number, mode: SessionRecord['mode'] = 'tutor'): SessionRecord =>
@@ -88,7 +89,7 @@ describe('D13: registro y progreso', () => {
     expect(p[1].session.durationMs).toBe(240000);
   });
   it('CSV incluye modo y ayudas', () => {
-    expect(toCSV([{ ...tr('miel','s',true,0), mode: 'independiente', helps: 1 }]).split('\n')[1].endsWith(',independiente,1,')).toBe(true);
+    expect(toCSV([{ ...tr('miel','s',true,0), mode: 'independiente', helps: 1 }]).split('\n')[1].endsWith(',independiente,1,,')).toBe(true);
   });
 });
 

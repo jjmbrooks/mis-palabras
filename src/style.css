@@ -91,3 +91,6 @@ tr.sub td { font-size: .8rem; color: #6b6458; padding-top: 0; }
 /* D16: en N4 y N5 el dibujo aparece tras acertar, grande, como retroalimentación. */
 .play .model.feedback:not([hidden]) { flex-direction:column; }
 .play .model.feedback .pic { height:min(24dvh, 170px); }
+/* Corrección sin error: la opción correcta se resalta como modelo y las demás se apagan. */
+.play .opt.modelo { border-color:#7fa98f; box-shadow:0 0 0 5px #cfe3d5; }
+.play .opt.off { opacity:.35; }
