@@ -86,3 +86,5 @@ tr.sub td { font-size: .8rem; color: #6b6458; padding-top: 0; }
 .word { --n:5; white-space:nowrap; max-width:100%; font-size:min(var(--wmax, 2.8rem), calc(100cqi / (var(--n) * 0.95 + 0.4))); line-height:1.1; }
 .present .word { --wmax:3.4rem; }
 .model .word { --wmax:2.2rem; }
+/* Con la Ayuda abierta, la carta modelo ya trae el dibujo: se oculta el de arriba para que quepan 3 opciones. */
+.play .stage:has(#model:not([hidden])) .stim { display:none; }

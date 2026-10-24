@@ -27,7 +27,7 @@ try {
     await p.goto(`http://localhost:5181/?semilla`);
     await p.click('#d'); await p.waitForSelector('#start'); await p.click('#start');
     const seen = new Set(); let n = 0;
-    while (n++ < 40 && seen.size < 4) {
+    while (n++ < 80 && !['leer', 'elegir2', 'elegir3'].every(k => seen.has(k))) {
       await p.waitForSelector('#go, #again:not([disabled]), #home', { timeout: 20000 });
       if (await p.$('#home')) break;
       if (await p.$('#go')) { await p.click('#go'); continue; }
@@ -59,6 +59,7 @@ try {
       }
       await p.waitForTimeout(300);
     }
+    for (const k of ['leer', 'elegir2', 'elegir3']) if (!seen.has(k)) fails.push(`${width}x${height}: no se llegó a ${k}`);
     await p.close();
   }
 } finally { await browser.close(); await server.close(); }
