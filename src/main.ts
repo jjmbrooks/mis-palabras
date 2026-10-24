@@ -1,6 +1,6 @@
 import './style.css';
 import { DECK, wordById, svgFor } from './deck';
-import { Session, IndependentSession, wordStates, nextHelp, toCSV, isIndependent, progress, clampIndepMinutes, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
+import { Session, IndependentSession, wordStates, nextHelp, toCSV, isIndependent, instructionFor, progress, clampIndepMinutes, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
 import { rewardFact } from './facts';
 import { say, chime, getVolume, setVolume } from './audio';
 import { Store, Child, demoStore, familyStore, signIn, onUser, newId } from './store';
@@ -233,12 +233,13 @@ async function session(mode: Mode) {
       const t0 = Date.now();
       const reading = spec.cardType === 'leer';
       const stim = spec.cardType === 'imagen_estimulo'
-        ? `<div class="stim" aria-label="Dibujo">${card(spec.word, 'img')}</div><p class="instr">¿Qué palabra es?</p>`
-        : reading
-          ? `<p class="instr">Lee la palabra</p>`
-          : `<p class="instr">Escucha al tutor y toca la palabra</p>
-             <button class="btn ghost cue" id="cue">Tutor: mantén presionado para ver qué decir</button>`;
-      stage().innerHTML = `${stim}
+        ? `<div class="stim" aria-label="Dibujo">${card(spec.word, 'img')}</div>`
+        : '';
+      // D14: instrucción neutra hablada, sin la palabra meta, con botón para repetirla.
+      const { spoken: instr, shown } = instructionFor(spec.cardType, w.text);
+      const instrHtml = `<div class="instr-row"><p class="instr">${esc(shown)}</p>
+        <button class="btn again" id="again" aria-label="Repetir la instrucción" title="Repetir la instrucción">🔊</button></div>`;
+      stage().innerHTML = `${spec.cardType === 'imagen_estimulo' ? stim + instrHtml : instrHtml + stim}
         <div id="model" class="model" hidden aria-live="polite">${card(spec.word, 'both')}</div>
         <p id="tutor" class="note" hidden>Tutor: guía al niño hacia la palabra correcta (señala o acerca la carta).</p>
         ${reading
@@ -247,12 +248,6 @@ async function session(mode: Mode) {
           : `<div class="opts n${spec.options.length}">${spec.options.map(o =>
               `<button class="card opt" data-id="${o}" disabled aria-label="${wordById(o).text}">${card(o, 'text')}</button>`).join('')}</div>`}
         <button class="btn help-b" id="help" disabled>Ayuda</button>`;
-      if (!reading && spec.cardType === 'elegir_texto') {
-        const cue = $('#cue');
-        const show = (e: Event) => { e.preventDefault(); cue.textContent = `Di: «${w.text.toLowerCase()}»`; };
-        const hide = () => { cue.textContent = 'Tutor: mantén presionado para ver qué decir'; };
-        cue.addEventListener('pointerdown', show); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => cue.addEventListener(ev, hide));
-      }
       const buttons = [...app.querySelectorAll<HTMLButtonElement>('.opt')];
       const escalate = () => {
         help = solo ? 'B' : nextHelp(help); helps++;
@@ -273,7 +268,9 @@ async function session(mode: Mode) {
         await say(ok ? `¡${w.text}, muy bien!` : w.text); // el audio solo llega después de responder
         resolve({ help, helps, correct, latency: firstTap - t0 });
       };
-      sleep(1000).then(() => { // breve demora antes de habilitar; sin audio previo
+      $('#again').onclick = () => { if (!$('#again').hasAttribute('disabled')) void say(instr); };
+      // Se lee la instrucción (nunca la palabra) y luego hay una breve demora antes de habilitar.
+      say(instr).then(() => sleep(Math.max(0, 1000 - (Date.now() - t0)))).then(() => {
         enabled = true; app.querySelectorAll<HTMLButtonElement>('.stage button').forEach(b => (b.disabled = false)); arm();
       });
       $('#help').onclick = () => { if (enabled && help === 'ninguna') escalate(); };
@@ -345,6 +342,9 @@ async function seedDemo(s: Store) {
     for (const w of ['sol', 'miel', 'flor', 'abeja']) for (let k = 0; k < 3; k++)
       await s.addTrial({ childId: 'demo', sessionId: id, word: w, cardType: kinds[i], help: k === 2 && i < 2 ? 'B' : 'ninguna',
         correct: !(k === 2 && i < 2) || w !== 'flor', latencyMs: 1500, at: at + k, mode: 'tutor', helps: 0 });
+    // AGUA llega a elegir_texto y NUBE a leer, para ver los tres tipos de ensayo.
+    if (i < 2) for (const w of ['agua', 'nube']) await s.addTrial({ childId: 'demo', sessionId: id, word: w, cardType: kinds[i], help: 'ninguna', correct: true, latencyMs: 1500, at: at + 5, mode: 'tutor', helps: 0 });
+    if (i >= 2 && i < 4) await s.addTrial({ childId: 'demo', sessionId: id, word: 'nube', cardType: kinds[i], help: 'ninguna', correct: true, latencyMs: 1500, at: at + 5, mode: 'tutor', helps: 0 });
     await s.addSession({ id, childId: 'demo', mode: 'tutor', deck: DECK_ID, startedAt: at, endedAt: at + 420000, durationMs: 420000, trials: 12 });
   }
 }

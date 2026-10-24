@@ -241,3 +241,25 @@ export class IndependentSession {
     if (!correct && !spec.repeat) this.queue.push(this.build(spec.word, true));
   }
 }
+
+// ---------- D14: instrucción hablada ----------
+
+/** Tipos en los que la instrucción NUNCA dice la palabra meta (bloqueo de estímulo, como D12). */
+export const NO_TARGET_IN_INSTRUCTION: CardType[] = ['imagen_estimulo', 'leer', 'imagen_texto', 'solo_texto'];
+
+/**
+ * Instrucción de cada ensayo (D14): `spoken` se lee en voz alta al empezar y con el botón 🔊;
+ * `shown` es el único texto visible.
+ * - leer e imagen_estimulo: frase neutra, sin la palabra meta.
+ * - elegir_texto: «Toca donde dice ABEJA». Aquí sí se nombra, porque la tarea es emparejar lo que oye con el texto.
+ */
+export function instructionFor(c: CardType, wordText: string): { spoken: string; shown: string } {
+  if (c === 'elegir_texto' || c === 'emparejar') return { spoken: `Toca donde dice ${wordText}`, shown: 'Toca donde dice…' };
+  if (c === 'leer' || c === 'solo_texto') return { spoken: '¿Qué dice aquí?', shown: '¿Qué dice aquí?' };
+  return { spoken: 'Toca la palabra de este dibujo.', shown: 'Toca la palabra de este dibujo.' };
+}
+
+const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+/** true si la frase contiene la palabra como palabra completa (sin importar acentos ni mayúsculas). */
+export const mentionsWord = (phrase: string, word: string) =>
+  new RegExp(`(^|[^a-zñ])${fold(word)}([^a-zñ]|$)`).test(fold(phrase));

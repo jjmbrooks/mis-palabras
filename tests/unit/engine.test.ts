@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Session, wordStates, nextHelp, toCSV, isIndependent, LEVELS, TrialRecord } from '../../src/engine';
-import { DECK, SIMILAR } from '../../src/deck';
+import { DECK, SIMILAR, wordById } from '../../src/deck';
 
 const seeded = (s = 1) => () => ((s = (s * 16807) % 2147483647) / 2147483647);
 const tr = (word: string, sessionId: string, correct: boolean, at: number, cardType: TrialRecord['cardType'] = 'imagen_texto'): TrialRecord =>
@@ -157,5 +157,38 @@ describe('D13: modo independiente', () => {
     for (const w of DECK) expect(FACTS[w.id]).toBeTruthy();
     expect(rewardFact(['rana'])!.word).toBe('rana');
     expect(rewardFact([])).toBeNull();
+  });
+});
+
+import { instructionFor, mentionsWord, NO_TARGET_IN_INSTRUCTION } from '../../src/engine';
+
+describe('D14: instrucción hablada', () => {
+  it('en leer e imagen_estimulo ninguna instrucción (dicha o visible) contiene la palabra meta', () => {
+    for (const c of NO_TARGET_IN_INSTRUCTION) for (const w of DECK) {
+      const i = instructionFor(c, w.text);
+      expect(mentionsWord(i.spoken, w.text), `${c}/${w.text}`).toBe(false);
+      expect(mentionsWord(i.shown, w.text), `${c}/${w.text}`).toBe(false);
+    }
+    expect(NO_TARGET_IN_INSTRUCTION).toEqual(expect.arrayContaining(['leer', 'imagen_estimulo']));
+  });
+  it('en sesiones reales (tutor y solo) las instrucciones de leer e imagen_estimulo no dicen la palabra', () => {
+    const specs = [];
+    const s = new Session(wordStates([]), seeded(11)); let t;
+    while ((t = s.next())) { specs.push(t); s.record(t, true); }
+    const ind = new IndependentSession(wordStates(masteredHist(['sol', 'miel', 'flor'])), seeded(5));
+    for (let i = 0; i < 10 && (t = ind.next(0)); i++) { specs.push(t); ind.record(t, true); }
+    for (const sp of specs.filter(x => x.cardType !== 'elegir_texto'))
+      expect(mentionsWord(instructionFor(sp.cardType, wordById(sp.word).text).spoken, wordById(sp.word).text)).toBe(false);
+  });
+  it('elegir_texto sí nombra la palabra al hablar («Toca donde dice ABEJA») y solo muestra «Toca donde dice…»', () => {
+    const i = instructionFor('elegir_texto', 'ABEJA');
+    expect(i.spoken).toBe('Toca donde dice ABEJA');
+    expect(i.shown).toBe('Toca donde dice…');
+    expect(mentionsWord(i.shown, 'ABEJA')).toBe(false);
+  });
+  it('mentionsWord ignora acentos y mayúsculas y no confunde PAN con PANAL', () => {
+    expect(mentionsWord('toca árbol', 'ÁRBOL')).toBe(true);
+    expect(mentionsWord('toca arbol', 'ÁRBOL')).toBe(true);
+    expect(mentionsWord('el panal', 'PAN')).toBe(false);
   });
 });
