@@ -85,9 +85,9 @@ def oso():
     return a.face(100, 92, 1, 20)
 @art
 def pez():
-    a = Art(); a.path('M150 100 L186 70 Q178 100 186 130 Z', a.g('#9fe0ff', '#3d9be0'))
-    a.ell(96, 100, 62, 46, a.g('#c8f0ff', '#58b6f0', '#2a7cc4')); a.path('M90 56 Q110 34 128 60Z', '#3d9be0'); a.path('M96 140 Q112 160 124 138Z', '#3d9be0')
-    a.shine(70, 76, 20, 9); return a.face(82, 98, .95, 16)
+    a = Art(); a.path('M156 100 L196 56 Q184 100 196 144 Z', a.g('#9fe0ff', '#3d9be0'))
+    a.ell(90, 100, 78, 60, a.g('#c8f0ff', '#58b6f0', '#2a7cc4')); a.path('M80 42 Q108 14 132 48Z', '#3d9be0'); a.path('M88 156 Q110 182 128 152Z', '#3d9be0')
+    a.shine(58, 70, 26, 11); return a.face(74, 98, 1.2, 20)
 @art
 def mono():
     a = Art(); a.path('M140 160 Q186 160 176 120 Q170 104 160 112', 'none', 'stroke="#8a5a32" stroke-width="9" stroke-linecap="round"')
@@ -194,13 +194,14 @@ def gorro():
     a.circ(100, 24, 12, a.g('#fff2b0', '#ffc21a')); a.ell(100, 166, 56, 12, a.g('#fff', '#f2eefc'))
     return a.face(100, 124, .75, 17)
 @art
-def fiesta():
-    a = Art(); import math
-    for i, c in enumerate(['#ff5d8f', '#36c2b4', '#ffd23f', '#8d6bf2', '#4fb3ff', '#ff8a3d']):
-        t = -math.pi * (.15 + i * .14); a.rect(100 + 70 * math.cos(t), 80 + 70 * math.sin(t), 8, 14, 2, c, f'transform="rotate({i*30} {100+70*math.cos(t)} {80+70*math.sin(t)})"')
-    a.path('M60 160 L104 66 L140 160Z', a.g('#fff2b0', '#ffc21a', '#e08a00'), 'transform="rotate(-18 100 120)"')
-    for i, c in enumerate(['#ff5d8f', '#36c2b4', '#8d6bf2']): a.path(f'M{96+i*10} 62 Q{80+i*14} {38-i*6} {70+i*20} {26}', 'none', f'stroke="{c}" stroke-width="5" stroke-linecap="round"', ) if False else a.path(f'M{98+i*6} 60 Q{84+i*18} 40 {78+i*26} 24', 'none', f'stroke="{c}" stroke-width="5" stroke-linecap="round"')
-    return a.face(100, 128, .8, 15)
+def serpentina():
+    a = Art()
+    for k, (c, y0) in enumerate((('#ff5d8f', 40), ('#36c2b4', 70), ('#8d6bf2', 100))):
+        d = f'M20 {y0} ' + ' '.join(f'Q{36+n*40} {y0+(-22 if n%2 else 22)} {56+n*40} {y0}' for n in range(4))
+        a.path(d, 'none', f'stroke="{c}" stroke-width="9" stroke-linecap="round"')
+    a.ell(100, 150, 44, 34, a.g('#fff2b0', '#ffc21a', '#e08a00')); a.path('M62 140 Q70 128 80 136', 'none', 'stroke="#e08a00" stroke-width="5" stroke-linecap="round"')
+    a.path('M140 150 Q160 120 176 140 Q190 160 178 176', 'none', 'stroke="#ffc21a" stroke-width="9" stroke-linecap="round"')
+    a.shine(82, 134, 12, 6); return a.face(104, 152, .85, 15)
 @art
 def tacos():
     a = Art()

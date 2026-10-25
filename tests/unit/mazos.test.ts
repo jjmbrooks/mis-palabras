@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { distractors, isVeryDifferent, Session, wordStates } from '../../src/engine';
+import { distractors, isVeryDifferent, Session, wordStates, seenWords } from '../../src/engine';
 import { DECKS, DECK, WORDS, useDeck, wordById } from '../../src/deck';
 import { FACTS, FACT_SOURCES } from '../../src/facts';
 import { ANIMAL_SOUNDS } from '../../src/audio';
@@ -18,11 +18,13 @@ describe('mazos nuevos', () => {
   it('cuatro mazos con las palabras pedidas', () => {
     const t = (id: string) => DECKS.find(d => d.id === id)!.words.map(w => wordById(w).text).join(' ');
     expect(t('animales')).toBe('PERRO GATO VACA PATO LEÓN OSO PEZ MONO CERDO BURRO TORTUGA JIRAFA ELEFANTE CABALLO GALLINA');
-    expect(t('cumpleanos')).toBe('PASTEL PIÑATA GLOBO VELA REGALO DULCES GORRO FIESTA TACOS GELATINA NIEVE AMIGOS');
-    expect(t('navidad')).toBe('ÁRBOL ESTRELLA REGALO NIEVE PIÑATA BOTA PONCHE BUÑUELO NACIMIENTO ESFERA CAMPANA VELA');
+    expect(t('cumpleanos')).toBe('PASTEL PIÑATA GLOBO VELA REGALO DULCES GORRO SERPENTINA TACOS GELATINA NIEVE AMIGOS');
+    expect(t('navidad')).toBe('ÁRBOL ESTRELLA REGALO PIÑATA BOTA PONCHE BUÑUELO NACIMIENTO ESFERA CAMPANA VELA');
   });
-  it('REGALO, NIEVE, PIÑATA y VELA son una sola entrada compartida', () => {
-    for (const id of ['regalo', 'nieve', 'pinata', 'vela']) {
+  it('REGALO, PIÑATA y VELA son una sola entrada compartida; NIEVE solo en Cumpleaños', () => {
+    expect(DECKS.find(d => d.id === 'navidad')!.words).not.toContain('nieve');
+    expect(DECKS.find(d => d.id === 'cumpleanos')!.words).toContain('nieve');
+    for (const id of ['regalo', 'pinata', 'vela']) {
       expect(WORDS.filter(w => w.id === id)).toHaveLength(1);
       useDeck('cumpleanos'); const a = DECK.find(w => w.id === id);
       useDeck('navidad'); const b = DECK.find(w => w.id === id);
@@ -60,11 +62,46 @@ describe('mazos nuevos', () => {
   });
   it('faltantes de contraste (lista documentada)', () => {
     expect(gaps('animales')).toEqual({ n1: [], n2: [] });
-    expect(gaps('cumpleanos')).toEqual({ n1: ['GLOBO', 'GORRO'], n2: ['TACOS', 'NIEVE'] });
+    expect(gaps('cumpleanos')).toEqual({ n1: [], n2: ['GLOBO', 'GORRO'] });
     expect(gaps('navidad')).toEqual({ n1: [], n2: [] });
     expect(gaps('abejas-jardin')).toEqual({ n1: ['MIEL', 'MAMÁ'], n2: ['FLOR', 'HOJA', 'AGUA', 'NUBE', 'RANA', 'CASA', 'PAPÁ'] });
   });
   it('una sesión con tutor funciona en cada mazo', () => {
     for (const d of DECKS) { useDeck(d.id); const s = new Session(wordStates([]), seeded(2)); expect(d.words).toContain(s.next()!.word); }
+  });
+  it('reserva de otros mazos: MIEL y MAMÁ en Abejas toman un distractor muy distinto ya visto', () => {
+    useDeck('abejas-jardin');
+    const seen = ['perro', 'tortuga', 'elefante', 'gato'];
+    for (const w of ['miel', 'mama']) for (let s = 1; s < 8; s++) {
+      const [o] = distractors(w, 1, seeded(s), undefined, seen);
+      expect(isVeryDifferent(o, w)).toBe(true);
+      expect(seen).toContain(o);
+      const two = distractors(w, 2, seeded(s), undefined, seen);
+      expect(two.every(x => isVeryDifferent(x, w))).toBe(true);
+    }
+  });
+  it('reserva: solo palabras ya vistas, solo si el mazo no alcanza, nunca en N3+', () => {
+    useDeck('abejas-jardin');
+    const all = WORDS.map(w => w.id);
+    for (let s = 1; s < 8; s++) {
+      expect(distractors('miel', 1, seeded(s))[0]).toMatch(/./); // sin vistas: se queda en el mazo
+      expect(DECK.map(w => w.id)).toContain(distractors('miel', 1, seeded(s), undefined, [])[0]);
+      // SOL tiene distractores muy distintos en su mazo: no se piden prestados
+      expect(DECK.map(w => w.id)).toContain(distractors('sol', 1, seeded(s), undefined, all)[0]);
+      for (const o of distractors('miel', 3, seeded(s), undefined, all)) expect(DECK.map(w => w.id)).toContain(o);
+      // las vistas que no son muy distintas no se usan
+      for (const o of distractors('mama', 1, seeded(s), undefined, ['mono', 'pato'])) expect(DECK.map(w => w.id)).toContain(o);
+    }
+    expect(seenWords([{ word: 'perro' }, { word: 'perro' }, { word: 'miel' }, { word: 'xyz' }] as never)).toEqual(['perro', 'miel']);
+  });
+  it('la sesión pasa las palabras vistas a los distractores', () => {
+    useDeck('abejas-jardin');
+    const st = wordStates([]);
+    for (let s = 1; s < 30; s++) {
+      const sess = new Session(st, seeded(s), undefined, ['miel', 'sol'], { knowsPictures: true, seen: ['elefante'] });
+      const sp = sess.next()!;
+      if (sp.word === 'miel' && sp.level === 1) { expect(sp.options).toContain('elefante'); return; }
+    }
+    throw new Error('no salió MIEL en N1');
   });
 });

@@ -4,13 +4,13 @@ Estado: en revisión (rama `feat/mazos-nuevos`), sin publicar.
 
 ## Palabras
 - **Animales (15):** PERRO, GATO, VACA, PATO, LEÓN, OSO, PEZ, MONO, CERDO, BURRO, TORTUGA, JIRAFA, ELEFANTE, CABALLO, GALLINA.
-- **Cumpleaños (12):** PASTEL, PIÑATA, GLOBO, VELA, REGALO, DULCES, GORRO, FIESTA, TACOS, GELATINA, NIEVE, AMIGOS.
-- **Navidad (12):** ÁRBOL, ESTRELLA, REGALO, NIEVE, PIÑATA, BOTA, PONCHE, BUÑUELO, NACIMIENTO, ESFERA, CAMPANA, VELA.
+- **Cumpleaños (12):** PASTEL, PIÑATA, GLOBO, VELA, REGALO, DULCES, GORRO, SERPENTINA, TACOS, GELATINA, NIEVE, AMIGOS.
+- **Navidad (11):** ÁRBOL, ESTRELLA, REGALO, PIÑATA, BOTA, PONCHE, BUÑUELO, NACIMIENTO, ESFERA, CAMPANA, VELA.
 
 ## Entradas compartidas
-`src/deck.ts` tiene un registro único (`WORDS`), y cada mazo (`DECKS`) solo lista ids. REGALO, NIEVE, PIÑATA y VELA son **una sola entrada**
-(`regalo`, `nieve`, `pinata`, `vela`) en Cumpleaños y Navidad. Comparten dibujo, historial y nivel, y el audio de palabra también,
-porque la voz (`say`, es-MX) lee el mismo texto. NIEVE es la nieve de garrafa (helado), que sirve en los dos mazos.
+`src/deck.ts` tiene un registro único (`WORDS`), y cada mazo (`DECKS`) solo lista ids. REGALO, PIÑATA y VELA son **una sola entrada**
+(`regalo`, `pinata`, `vela`) en Cumpleaños y Navidad. Comparten dibujo, historial y nivel, y el audio de palabra también,
+porque la voz (`say`, es-MX) lee el mismo texto. NIEVE es la nieve de garrafa (helado) y está solo en Cumpleaños (revisión de Brooks).
 **ÁRBOL de Navidad** es una entrada aparte (`arbol_navidad`): el pino adornado no es el árbol del mazo Abejas. Su audio sí es el mismo.
 El mazo activo se elige en la pantalla de inicio y se guarda en `mp.deck` (solo en el dispositivo). La sesión guarda `deck`, y las reglas aceptan
 `abejas-jardin`, `animales`, `cumpleanos` y `navidad`. **Hay que desplegar las reglas al publicar.**
@@ -27,21 +27,21 @@ con licencia MIT, sin grabaciones ni archivos de terceros.
 
 | Animal | Sonido sintetizado | Dato curioso | Fuente del dato |
 |---|---|---|---|
-| PERRO | guau guau (2 barridos de diente de sierra 520→300 Hz, filtro paso bajo) | https://www.britannica.com/animal/dog | https://www.britannica.com/animal/dog |
-| GATO | miau (triángulo 560→820→480 Hz con vibrato) | https://www.britannica.com/animal/cat | https://www.britannica.com/animal/cat |
-| VACA | muuu (diente de sierra 150→115 Hz, paso bajo) | https://www.britannica.com/animal/ruminant | https://www.britannica.com/animal/ruminant |
-| PATO | cuac ×3 (cuadrada 720→600 Hz) | https://www.britannica.com/science/preen-gland | https://www.britannica.com/science/preen-gland |
-| LEON | rugido (diente de sierra 110→70 Hz + ruido filtrado) | https://nationalzoo.si.edu/animals/african-lion | https://nationalzoo.si.edu/animals/african-lion |
-| OSO | gruñido (diente de sierra 120→95 Hz, trémolo) | https://www.britannica.com/animal/bear | https://www.britannica.com/animal/bear |
-| PEZ | burbujas (4 blips senoidales ascendentes) | https://www.britannica.com/science/gill | https://www.britannica.com/science/gill |
-| MONO | uh-uh-ah (3 triángulos ascendentes) | https://www.britannica.com/animal/monkey | https://www.britannica.com/animal/monkey |
-| CERDO | oinc oinc (cuadrada 260→180 Hz, trémolo) | https://www.britannica.com/animal/pig | https://www.britannica.com/animal/pig |
-| BURRO | ia-ia (alterna agudo/grave) | https://nationalzoo.si.edu/animals/miniature-donkey | https://nationalzoo.si.edu/animals/miniature-donkey |
-| TORTUGA | resoplido suave (ruido filtrado; casi no vocalizan) | https://www.britannica.com/animal/turtle-reptile | https://www.britannica.com/animal/turtle-reptile |
-| JIRAFA | zumbido grave (92 Hz senoidal) | https://www.britannica.com/animal/giraffe | https://www.britannica.com/animal/giraffe |
-| ELEFANTE | barrito (diente de sierra 420→640 Hz) | https://www.britannica.com/animal/elephant-mammal | https://www.britannica.com/animal/elephant-mammal |
-| CABALLO | relincho (diente de sierra 900→480 Hz, vibrato) | https://www.nationalgeographic.com/science/article/150711-animals-science-sleep-horses-bison-moose | https://www.nationalgeographic.com/science/article/150711-animals-science-sleep-horses-bison-moose |
-| GALLINA | co-co-co-cooo (cuadrada) | https://www.britannica.com/animal/chicken | https://www.britannica.com/animal/chicken |
+| PERRO | guau guau (2 barridos de diente de sierra 520→300 Hz, filtro paso bajo) | El perro huele muchísimo mejor que las personas. | https://www.pbs.org/wgbh/nova/article/dogs-sense-of-smell (abierta y verificada, oct 2026) |
+| GATO | miau (triángulo 560→820→480 Hz con vibrato) | Los bigotes del gato le ayudan a sentir lo que hay a su alrededor. | https://www.britannica.com/animal/cat (abierta y verificada, oct 2026) |
+| VACA | muuu (diente de sierra 150→115 Hz, paso bajo) | La vaca tiene un estómago con cuatro partes para digerir el pasto. | https://www.britannica.com/animal/ruminant (abierta y verificada, oct 2026) |
+| PATO | cuac ×3 (cuadrada 720→600 Hz) | El pato se arregla las plumas con un aceite que él mismo hace. | https://www.britannica.com/science/preen-gland (abierta y verificada, oct 2026) |
+| LEON | rugido (diente de sierra 110→70 Hz + ruido filtrado) | El rugido del león se oye hasta a 8 kilómetros. | https://www.nationalgeographic.com/animals/mammals/facts/african-lion (abierta y verificada, oct 2026) |
+| OSO | gruñido (diente de sierra 120→95 Hz, trémolo) | Muchos osos duermen casi todo el invierno en su cueva. | https://www.britannica.com/animal/bear (abierta y verificada, oct 2026) |
+| PEZ | burbujas (4 blips senoidales ascendentes) | Los peces respiran bajo el agua con sus branquias. | https://www.nps.gov/articles/blue-in-the-face-breathing-underwater.htm (abierta y verificada, oct 2026) |
+| MONO | uh-uh-ah (3 triángulos ascendentes) | Algunos monos usan la cola como una mano para agarrarse de las ramas. | https://www.britannica.com/animal/monkey (abierta y verificada, oct 2026) |
+| CERDO | oinc oinc (cuadrada 260→180 Hz, trémolo) | El cerdo casi no suda; se revuelca en el lodo para refrescarse. | https://extension.missouri.edu/news/sweating-like-a-pig (abierta y verificada, oct 2026) |
+| BURRO | ia-ia (alterna agudo/grave) | Las orejas largas del burro le ayudan a oír lejos y a quitarse el calor. | https://nationalzoo.si.edu/animals/miniature-donkey (abierta y verificada, oct 2026) |
+| TORTUGA | resoplido suave (ruido filtrado; casi no vocalizan) | El caparazón de la tortuga es parte de sus huesos; no se lo puede quitar. | https://www.britannica.com/animal/turtle-reptile (abierta y verificada, oct 2026) |
+| JIRAFA | zumbido grave (92 Hz senoidal) | La jirafa es el animal más alto de todos los que viven en tierra. | https://www.britannica.com/animal/giraffe (abierta y verificada, oct 2026) |
+| ELEFANTE | barrito (diente de sierra 420→640 Hz) | El elefante usa la trompa para oler, beber agua y agarrar cosas. | https://www.britannica.com/animal/elephant-mammal (abierta y verificada, oct 2026) |
+| CABALLO | relincho (diente de sierra 900→480 Hz, vibrato) | El caballo puede dormir de pie, sin caerse. | https://www.nationalgeographic.com/science/article/150711-animals-science-sleep-horses-bison-moose (abierta y verificada, oct 2026) |
+| GALLINA | co-co-co-cooo (cuadrada) | El pollito sale del huevo después de unos 21 días. | https://www.britannica.com/animal/chicken (abierta y verificada, oct 2026) |
 
 ## Contraste de distractores en N1/N2
 N1 muestra el dibujo y 2 opciones, y busca un distractor *muy distinto*: otra letra inicial y ≥2 letras de diferencia de longitud
@@ -50,10 +50,15 @@ N1 muestra el dibujo y 2 opciones, y busca un distractor *muy distinto*: otra le
 | Mazo | Sin ningún distractor muy distinto (N1) | Solo uno (N2 completa con otro) |
 |---|---|---|
 | Animales | — | — |
-| Cumpleaños | GLOBO, GORRO | TACOS, NIEVE |
+| Cumpleaños | — | GLOBO, GORRO |
 | Navidad | — | — |
 | Abejas (referencia) | MIEL, MAMÁ | FLOR, HOJA, AGUA, NUBE, RANA, CASA, PAPÁ |
 
-En Cumpleaños casi todas las palabras tienen 5–6 letras, y la única larga (GELATINA) empieza con G. Para GLOBO y GORRO no hay nada con otra inicial y ±2
-letras. Además, GLOBO/GORRO se marcaron como par parecido (`SIMILAR`). Hoy el motor cae al siguiente nivel de contraste. Para cerrar los huecos,
-una palabra larga sin G inicial (p. ej. MAÑANITAS o SERPENTINA) o una de ≤3 letras. No se agregó: queda a decisión de Brooks.
+SERPENTINA (10 letras, S) reemplazó a FIESTA y cerró los huecos de N1 en Cumpleaños.
+
+### Reserva de otros mazos (palabras ya vistas)
+Si el mazo activo no tiene suficientes distractores muy distintos para N1/N2, `distractors(word, level, rng, pool, seen)` completa con
+palabras **de otros mazos que el niño ya vio**, es decir, que tienen historial en su perfil (`seenWords(history)`, pasado a la sesión como
+`SessionOptions.seen`). Nunca usa palabras sin historial, y nunca en N3+ (allí se buscan parecidos del mismo mazo). Si no hay vistas
+suficientes, el motor cae como antes al siguiente nivel de contraste. Pruebas: MIEL y MAMÁ en Abejas toman un distractor muy distinto ya visto
+(p. ej. ELEFANTE o TORTUGA); SOL no pide prestado porque su mazo ya alcanza.

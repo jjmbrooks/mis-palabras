@@ -1,5 +1,5 @@
 // Lógica pura del Modo con tutor (docs/mecanica-inicial.md). Sin DOM ni Firebase: probada en tests/unit.
-import { DECK, SIMILAR, wordById } from './deck';
+import { DECK, SIMILAR, WORDS, wordById } from './deck';
 
 /**
  * Tipos de carta (D12, docs/mecanica-inicial.md §2).
@@ -92,6 +92,9 @@ function legacyLevel(trials: TrialRecord[]): Level {
 export const isFirstTryMiss = (t: Pick<TrialRecord, 'correct' | 'miss' | 'help'>) => t.miss ?? (!t.correct && t.help !== 'ninguna');
 
 /** Nivel de cada palabra a partir del historial (D16). La práctica independiente no cuenta (D5/D13). */
+/** Palabras con historial en el perfil (de cualquier mazo). */
+export const seenWords = (history: TrialRecord[]) => [...new Set(history.map(t => t.word))].filter(id => WORDS.some(w => w.id === id));
+
 export function wordStates(history: TrialRecord[]): Map<string, WordState> {
   const out = new Map<string, WordState>();
   const sorted = history.filter(t => t.mode !== 'independiente').sort((a, b) => a.at - b.at);
@@ -146,14 +149,17 @@ export const isVeryDifferent = (a: string, b: string) => textOf(a)[0] !== textOf
 export const isLookAlike = (a: string, b: string) => a !== b && (textOf(a)[0] === textOf(b)[0] || len(a) === len(b));
 
 /** Distractores según el nivel (D16). Con pocas palabras se completa con la mejor alternativa. */
-export function distractors(word: string, level: Level, rng: Rng, pool: string[] = DECK.map(w => w.id)): string[] {
+export function distractors(word: string, level: Level, rng: Rng, pool: string[] = DECK.map(w => w.id), seen: string[] = []): string[] {
   const n = optionCountFor(level) - 1;
   if (n <= 0) return [];
   const others = shuffle(pool.filter(id => id !== word), rng);
   let ranked: string[];
   if (level <= 2) {
     const ok = others.filter(id => !similar(id, word));
-    ranked = [...ok.filter(id => isVeryDifferent(id, word)),
+    // Si el mazo no alcanza con distractores muy distintos, se toman de palabras ya vistas de otros mazos.
+    const inDeck = ok.filter(id => isVeryDifferent(id, word));
+    const borrowed = inDeck.length >= n ? [] : shuffle(seen.filter(id => id !== word && !pool.includes(id) && WORDS.some(w => w.id === id) && isVeryDifferent(id, word)), rng);
+    ranked = [...inDeck, ...borrowed,
       ...ok.filter(id => !isVeryDifferent(id, word) && !isLookAlike(id, word)),
       ...ok.filter(id => isLookAlike(id, word))];
   } else {
@@ -176,6 +182,9 @@ export interface TrialSpec {
 export interface SessionOptions {
   /** El niño ya conoce los dibujos: se salta la carta de enseñanza imagen + texto (D12.5; desde D15 siempre true). */
   knowsPictures: boolean;
+  /** Palabras de OTROS mazos que el niño ya vio (tienen historial en su perfil): reserva para N1/N2 cuando el mazo
+   *  activo no tiene un distractor muy distinto (mazos nuevos). Nunca se usan palabras que el niño no haya visto. */
+  seen?: string[];
 }
 
 /** Acierto independiente: al primer intento y sin ayuda. Un ensayo con ayuda nunca cuenta (D12.2). */
@@ -184,8 +193,8 @@ export const isIndependent = (firstTry: boolean, help: Help) => firstTry && help
 export interface SessionConfig { trials: number; maxTrials: number; targets: number }
 export const DEFAULT_CONFIG: SessionConfig = { trials: 12, maxTrials: 15, targets: 3 };
 
-export function buildSpec(word: string, level: Level, rng: Rng, repeat = false, presentFirst = false): TrialSpec {
-  const options = level === 5 ? [word] : shuffle([word, ...distractors(word, level, rng)], rng);
+export function buildSpec(word: string, level: Level, rng: Rng, repeat = false, presentFirst = false, seen: string[] = []): TrialSpec {
+  const options = level === 5 ? [word] : shuffle([word, ...distractors(word, level, rng, undefined, seen)], rng);
   return { word, level, cardType: cardTypeFor(level), picture: pictureFor(level), options, presentFirst, repeat };
 }
 
@@ -224,7 +233,7 @@ export class Session {
   private build(word: string, repeat = false): TrialSpec {
     const presentFirst = !this.opts.knowsPictures && !repeat && !this.presented.has(word) && !this.states.get(word)?.mastered;
     this.presented.add(word);
-    return buildSpec(word, this.levelOf(word), this.rng, repeat, presentFirst);
+    return buildSpec(word, this.levelOf(word), this.rng, repeat, presentFirst, this.opts.seen ?? []);
   }
 
   next(): TrialSpec | null {

@@ -1,6 +1,6 @@
 import './style.css';
 import { DECK, DECKS, wordById, svgFor, useDeck, activeDeck } from './deck';
-import { Session, IndependentSession, wordStates, nextHelp, toCSV, isIndependent, instructionFor, progress, cardTypeFor, Level, INDEP_GOAL, INDEP_MINUTES, INDEP_MIN_WORDS, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
+import { Session, IndependentSession, wordStates, seenWords, nextHelp, toCSV, isIndependent, instructionFor, progress, cardTypeFor, Level, INDEP_GOAL, INDEP_MINUTES, INDEP_MIN_WORDS, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
 import { rewardFact } from './facts';
 import { say, chime, animalSound, getVolume, setVolume } from './audio';
 import { Store, Child, demoStore, familyStore, signIn, onUser, newId } from './store';
@@ -171,7 +171,7 @@ async function session(mode: Mode) {
   const history = await s.trials(c.id);
   const states = wordStates(history);
   // D15: el dibujo ya acompaña cada ensayo de elegir, así que no hay carta de enseñanza previa (daría la respuesta).
-  const sess = solo ? null : new Session(states, Math.random, undefined, [], { knowsPictures: true });
+  const sess = solo ? null : new Session(states, Math.random, undefined, [], { knowsPictures: true, seen: seenWords(history) });
   const indep = solo ? new IndependentSession(states, Math.random) : null;
   if (indep && !indep.available) return home();
   const sessionId = newId();
