@@ -194,15 +194,6 @@ def gorro():
     a.circ(100, 24, 12, a.g('#fff2b0', '#ffc21a')); a.ell(100, 166, 56, 12, a.g('#fff', '#f2eefc'))
     return a.face(100, 124, .75, 17)
 @art
-def serpentina():
-    a = Art()
-    for k, (c, y0) in enumerate((('#ff5d8f', 40), ('#36c2b4', 70), ('#8d6bf2', 100))):
-        d = f'M20 {y0} ' + ' '.join(f'Q{36+n*40} {y0+(-22 if n%2 else 22)} {56+n*40} {y0}' for n in range(4))
-        a.path(d, 'none', f'stroke="{c}" stroke-width="9" stroke-linecap="round"')
-    a.ell(100, 150, 44, 34, a.g('#fff2b0', '#ffc21a', '#e08a00')); a.path('M62 140 Q70 128 80 136', 'none', 'stroke="#e08a00" stroke-width="5" stroke-linecap="round"')
-    a.path('M140 150 Q160 120 176 140 Q190 160 178 176', 'none', 'stroke="#ffc21a" stroke-width="9" stroke-linecap="round"')
-    a.shine(82, 134, 12, 6); return a.face(104, 152, .85, 15)
-@art
 def gelatina():
     a = Art(); a.ell(100, 166, 62, 12, a.g('#ffffff', '#dfe8ee'))
     a.path('M50 162 L58 84 Q100 64 142 84 L150 162 Q100 174 50 162Z', a.g('#ffd1dc', '#ff4f7b', '#c51f4d'), 'opacity=".95"')

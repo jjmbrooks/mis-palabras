@@ -4,7 +4,7 @@ Estado: en revisión (rama `feat/mazos-nuevos`), sin publicar.
 
 ## Palabras
 - **Animales (15):** PERRO, GATO, VACA, PATO, LEÓN, OSO, PEZ, MONO, CERDO, BURRO, TORTUGA, JIRAFA, ELEFANTE, CABALLO, GALLINA.
-- **Cumpleaños (10):** PASTEL, PIÑATA, GLOBO, VELA, REGALO, DULCES, GORRO, SERPENTINA, GELATINA, AMIGOS.
+- **Cumpleaños (9):** PASTEL, PIÑATA, GLOBO, VELA, REGALO, DULCES, GORRO, GELATINA, AMIGOS.
 - **Navidad (11):** ÁRBOL, ESTRELLA, REGALO, PIÑATA, BOTA, ESFERA, CAMPANA, VELA, NIEVE, RENO, SANTA.
 
 ## Entradas compartidas
@@ -50,11 +50,11 @@ N1 muestra el dibujo y 2 opciones, y busca un distractor *muy distinto*: otra le
 | Mazo | Sin ningún distractor muy distinto (N1) | Solo uno (N2 completa con otro) |
 |---|---|---|
 | Animales | — | — |
-| Cumpleaños | — | GLOBO, GORRO |
+| Cumpleaños | GLOBO, GORRO | — |
 | Navidad | — | — |
 | Abejas (referencia) | MIEL, MAMÁ | FLOR, HOJA, AGUA, NUBE, RANA, CASA, PAPÁ |
 
-SERPENTINA (10 letras, S) reemplazó a FIESTA y cerró los huecos de N1 en Cumpleaños.
+FIESTA, TACOS y NIEVE salieron de Cumpleaños y SERPENTINA se probó y se quitó, así que GLOBO y GORRO dependen de la reserva de palabras ya vistas (abajo).
 
 ### Reserva de otros mazos (palabras ya vistas)
 Si el mazo activo no tiene suficientes distractores muy distintos para N1/N2, `distractors(word, level, rng, pool, seen)` completa con
@@ -62,3 +62,17 @@ palabras **de otros mazos que el niño ya vio**, es decir, que tienen historial 
 `SessionOptions.seen`). Nunca usa palabras sin historial, y nunca en N3+ (allí se buscan parecidos del mismo mazo). Si no hay vistas
 suficientes, el motor cae como antes al siguiente nivel de contraste. Pruebas: MIEL y MAMÁ en Abejas toman un distractor muy distinto ya visto
 (p. ej. ELEFANTE o TORTUGA); SOL no pide prestado porque su mazo ya alcanza.
+
+## Orden de presentación: cortas primero
+Cada palabra tiene su número de sílabas (`SYLLABLES` en `src/deck.ts`). Por defecto, las de **3 o más sílabas** quedan bloqueadas como
+objetivo nuevo hasta que el niño domina (N4) **todas** las de 1–2 sílabas del mismo mazo (`lockedWord` en `src/engine.ts`). Una palabra larga
+que ya tiene avance no se vuelve a bloquear. Se ajusta por palabra en `LENGTH_OVERRIDE` (`'corta'` la libera; `'larga'` la bloquea).
+Por defecto todas las largas se quedan bloqueadas (confirmado por Brooks).
+
+| Mazo | Cortas (1–2 sílabas) | Largas (3+), bloqueadas al inicio |
+|---|---|---|
+| Abejas | MIEL, FLOR, SOL, PANAL, HOJA, ÁRBOL, AGUA, NUBE, RANA, CASA, PAN, MAMÁ, PAPÁ | ABEJA (3), MARIPOSA (4) |
+| Animales | PERRO, GATO, VACA, PATO, LEÓN, OSO, PEZ, MONO, CERDO, BURRO | TORTUGA (3), JIRAFA (3), ELEFANTE (4), CABALLO (3), GALLINA (3) |
+| Cumpleaños | PASTEL, GLOBO, VELA, DULCES, GORRO | PIÑATA (3), REGALO (3), GELATINA (4), AMIGOS (3) |
+| Navidad | ÁRBOL, BOTA, VELA, NIEVE, RENO, SANTA | ESTRELLA (3), REGALO (3), PIÑATA (3), ESFERA (3), CAMPANA (3) |
+

@@ -1,5 +1,5 @@
 // Lógica pura del Modo con tutor (docs/mecanica-inicial.md). Sin DOM ni Firebase: probada en tests/unit.
-import { DECK, SIMILAR, WORDS, wordById } from './deck';
+import { DECK, SIMILAR, WORDS, wordById, isLong } from './deck';
 
 /**
  * Tipos de carta (D12, docs/mecanica-inicial.md §2).
@@ -92,6 +92,13 @@ function legacyLevel(trials: TrialRecord[]): Level {
 export const isFirstTryMiss = (t: Pick<TrialRecord, 'correct' | 'miss' | 'help'>) => t.miss ?? (!t.correct && t.help !== 'ninguna');
 
 /** Nivel de cada palabra a partir del historial (D16). La práctica independiente no cuenta (D5/D13). */
+/** Las palabras largas (3+ sílabas, configurable en LENGTH_OVERRIDE) esperan a que todas las cortas del mazo estén dominadas (N4).
+ *  Una palabra larga que ya tiene historial no se vuelve a bloquear. */
+export function lockedWord(id: string, states: Map<string, WordState>): boolean {
+  if (!isLong(id) || (states.get(id)?.level ?? 1) > 1) return false;
+  return DECK.some(w => !isLong(w.id) && !states.get(w.id)?.mastered);
+}
+
 /** Palabras con historial en el perfil (de cualquier mazo). */
 export const seenWords = (history: TrialRecord[]) => [...new Set(history.map(t => t.word))].filter(id => WORDS.some(w => w.id === id));
 
@@ -213,11 +220,12 @@ export class Session {
               readonly cfg: SessionConfig = DEFAULT_CONFIG, preferred: string[] = [],
               readonly opts: SessionOptions = { knowsPictures: true }) {
     const ids = DECK.map(w => w.id);
-    const open = ids.filter(id => !states.get(id)?.complete);
+    const open = ids.filter(id => !states.get(id)?.complete && !lockedWord(id, states));
     const ordered = [...preferred.filter(id => open.includes(id)), ...open.filter(id => !preferred.includes(id))];
     const t: string[] = [];
     for (const id of ordered) { if (t.length >= Math.min(4, Math.max(2, cfg.targets))) break; if (!t.some(x => similar(x, id))) t.push(id); }
-    this.targets = t.length ? t : shuffle(ids, rng).slice(0, 2);
+    const free = ids.filter(id => !lockedWord(id, states));
+    this.targets = t.length ? t : shuffle(free.length ? free : ids, rng).slice(0, 2);
     const known = ids.filter(id => states.get(id)?.mastered && !this.targets.includes(id));
     this.known = known.length ? known : [...this.targets];
     for (const id of ids) this.level.set(id, states.get(id)?.level ?? 1);

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { distractors, isVeryDifferent, Session, wordStates, seenWords } from '../../src/engine';
-import { DECKS, DECK, WORDS, useDeck, wordById } from '../../src/deck';
+import { distractors, isVeryDifferent, Session, wordStates, seenWords, lockedWord, type WordState } from '../../src/engine';
+import { DECKS, DECK, WORDS, useDeck, wordById, SYLLABLES, LENGTH_OVERRIDE, isLong } from '../../src/deck';
 import { FACTS, FACT_SOURCES } from '../../src/facts';
 import { ANIMAL_SOUNDS } from '../../src/audio';
 
@@ -18,7 +18,7 @@ describe('mazos nuevos', () => {
   it('cuatro mazos con las palabras pedidas', () => {
     const t = (id: string) => DECKS.find(d => d.id === id)!.words.map(w => wordById(w).text).join(' ');
     expect(t('animales')).toBe('PERRO GATO VACA PATO LEÓN OSO PEZ MONO CERDO BURRO TORTUGA JIRAFA ELEFANTE CABALLO GALLINA');
-    expect(t('cumpleanos')).toBe('PASTEL PIÑATA GLOBO VELA REGALO DULCES GORRO SERPENTINA GELATINA AMIGOS');
+    expect(t('cumpleanos')).toBe('PASTEL PIÑATA GLOBO VELA REGALO DULCES GORRO GELATINA AMIGOS');
     expect(t('navidad')).toBe('ÁRBOL ESTRELLA REGALO PIÑATA BOTA ESFERA CAMPANA VELA NIEVE RENO SANTA');
   });
   it('REGALO, PIÑATA y VELA son una sola entrada compartida; NIEVE (copos) solo en Navidad', () => {
@@ -63,7 +63,7 @@ describe('mazos nuevos', () => {
   });
   it('faltantes de contraste (lista documentada)', () => {
     expect(gaps('animales')).toEqual({ n1: [], n2: [] });
-    expect(gaps('cumpleanos')).toEqual({ n1: [], n2: ['GLOBO', 'GORRO'] });
+    expect(gaps('cumpleanos')).toEqual({ n1: ['GLOBO', 'GORRO'], n2: [] });
     expect(gaps('navidad')).toEqual({ n1: [], n2: [] });
     expect(gaps('abejas-jardin')).toEqual({ n1: ['MIEL', 'MAMÁ'], n2: ['FLOR', 'HOJA', 'AGUA', 'NUBE', 'RANA', 'CASA', 'PAPÁ'] });
   });
@@ -79,6 +79,13 @@ describe('mazos nuevos', () => {
       expect(seen).toContain(o);
       const two = distractors(w, 2, seeded(s), undefined, seen);
       expect(two.every(x => isVeryDifferent(x, w))).toBe(true);
+    }
+  });
+  it('GLOBO y GORRO en Cumpleaños toman un distractor muy distinto ya visto', () => {
+    useDeck('cumpleanos');
+    for (const w of ['globo', 'gorro']) for (let s = 1; s < 8; s++) {
+      const [o] = distractors(w, 1, seeded(s), undefined, ['elefante', 'mariposa', 'pez']);
+      expect(isVeryDifferent(o, w)).toBe(true);
     }
   });
   it('reserva: solo palabras ya vistas, solo si el mazo no alcanza, nunca en N3+', () => {
@@ -104,5 +111,33 @@ describe('mazos nuevos', () => {
       if (sp.word === 'miel' && sp.level === 1) { expect(sp.options).toContain('elefante'); return; }
     }
     throw new Error('no salió MIEL en N1');
+  });
+  it('cada palabra tiene sus sílabas; las de 3+ son largas', () => {
+    for (const w of WORDS) expect(SYLLABLES[w.id]).toBeGreaterThan(0);
+    const long = WORDS.filter(w => isLong(w.id)).map(w => w.text).join(' ');
+    expect(long).toBe('ABEJA MARIPOSA TORTUGA JIRAFA ELEFANTE CABALLO GALLINA PIÑATA REGALO GELATINA AMIGOS ESTRELLA ESFERA CAMPANA');
+  });
+  it('las largas se desbloquean al dominar (N4) todas las cortas del mazo', () => {
+    useDeck('animales');
+    const short = DECK.filter(w => !isLong(w.id)).map(w => w.id);
+    const none = wordStates([]);
+    expect(lockedWord('elefante', none)).toBe(true);
+    expect(lockedWord('perro', none)).toBe(false);
+    for (let s = 1; s < 20; s++) expect(isLong(new Session(none, seeded(s)).next()!.word)).toBe(false);
+    const all = new Map<string, WordState>(short.map(id => [id, { level: 4, mastered: true, complete: false }]));
+    expect(lockedWord('elefante', all)).toBe(false);
+    const almost = new Map(all); almost.delete(short[0]);
+    expect(lockedWord('elefante', almost)).toBe(true);
+    // una larga que ya se empezó no se vuelve a bloquear
+    almost.set('jirafa', { level: 2, mastered: false, complete: false });
+    expect(lockedWord('jirafa', almost)).toBe(false);
+  });
+  it('el ajuste por palabra cambia el bloqueo', () => {
+    useDeck('animales');
+    LENGTH_OVERRIDE.elefante = 'corta'; LENGTH_OVERRIDE.perro = 'larga';
+    try {
+      expect(lockedWord('elefante', wordStates([]))).toBe(false);
+      expect(lockedWord('perro', wordStates([]))).toBe(true);
+    } finally { delete LENGTH_OVERRIDE.elefante; delete LENGTH_OVERRIDE.perro; }
   });
 });
