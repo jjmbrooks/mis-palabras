@@ -63,16 +63,15 @@ palabras **de otros mazos que el niño ya vio**, es decir, que tienen historial 
 suficientes, el motor cae como antes al siguiente nivel de contraste. Pruebas: MIEL y MAMÁ en Abejas toman un distractor muy distinto ya visto
 (p. ej. ELEFANTE o TORTUGA); SOL no pide prestado porque su mazo ya alcanza.
 
-## Orden de presentación: cortas primero
-Cada palabra tiene su número de sílabas (`SYLLABLES` en `src/deck.ts`). Por defecto, las de **3 o más sílabas** quedan bloqueadas como
-objetivo nuevo hasta que el niño domina (N4) **todas** las de 1–2 sílabas del mismo mazo (`lockedWord` en `src/engine.ts`). Una palabra larga
-que ya tiene avance no se vuelve a bloquear. Se ajusta por palabra en `LENGTH_OVERRIDE` (`'corta'` la libera; `'larga'` la bloquea).
-Por defecto todas las largas se quedan bloqueadas (confirmado por Brooks).
+## Orden de presentación: de menos a más sílabas
+Cada palabra tiene su número de sílabas (`SYLLABLES` en `src/deck.ts`). Las palabras nuevas se presentan **de menos a más sílabas**.
+Las de **1 a 3 sílabas** quedan libres. Solo las de **4 o más** quedan bloqueadas como objetivo nuevo hasta que el niño domina (N4) **todas**
+las demás del mazo (`lockedWord` en `src/engine.ts`). Una palabra larga que ya tiene avance no se vuelve a bloquear. ABEJA queda siempre libre.
+Se ajusta por palabra en `LENGTH_OVERRIDE` (`'corta'` la libera; `'larga'` la bloquea).
 
-| Mazo | Cortas (1–2 sílabas) | Largas (3+), bloqueadas al inicio |
-|---|---|---|
-| Abejas | MIEL, FLOR, SOL, PANAL, HOJA, ÁRBOL, AGUA, NUBE, RANA, CASA, PAN, MAMÁ, PAPÁ | ABEJA (3), MARIPOSA (4) |
-| Animales | PERRO, GATO, VACA, PATO, LEÓN, OSO, PEZ, MONO, CERDO, BURRO | TORTUGA (3), JIRAFA (3), ELEFANTE (4), CABALLO (3), GALLINA (3) |
-| Cumpleaños | PASTEL, GLOBO, VELA, DULCES, GORRO | PIÑATA (3), REGALO (3), GELATINA (4), AMIGOS (3) |
-| Navidad | ÁRBOL, BOTA, VELA, NIEVE, RENO, SANTA | ESTRELLA (3), REGALO (3), PIÑATA (3), ESFERA (3), CAMPANA (3) |
-
+| Mazo | Bloqueadas al inicio (4+ sílabas) |
+|---|---|
+| Abejas | MARIPOSA (4) |
+| Animales | ELEFANTE (4) |
+| Cumpleaños | GELATINA (4) |
+| Navidad | — |

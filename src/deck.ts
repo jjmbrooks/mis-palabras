@@ -42,9 +42,9 @@ export const SYLLABLES: Record<string, number> = {
   arbol_navidad: 2, estrella: 3, bota: 2, esfera: 3, campana: 3, nieve: 2, reno: 2, santa: 2,
 };
 /** Ajuste por palabra (lo confirma el tutor): 'corta' la deja libre aunque tenga 3+ sílabas; 'larga' la bloquea aunque sea corta.
- *  Por defecto, las palabras de 3+ sílabas quedan bloqueadas hasta dominar (N4) todas las de 1–2 sílabas del mazo. */
-export const LENGTH_OVERRIDE: Record<string, 'corta' | 'larga'> = {};
-export const isLong = (id: string) => LENGTH_OVERRIDE[id] ? LENGTH_OVERRIDE[id] === 'larga' : (SYLLABLES[id] ?? 1) >= 3;
+ *  Por defecto, las palabras de 4+ sílabas quedan bloqueadas hasta dominar (N4) todas las de 1–3 sílabas del mazo. ABEJA siempre libre. */
+export const LENGTH_OVERRIDE: Record<string, 'corta' | 'larga'> = { abeja: 'corta' };
+export const isLong = (id: string) => LENGTH_OVERRIDE[id] ? LENGTH_OVERRIDE[id] === 'larga' : (SYLLABLES[id] ?? 1) >= 4;
 export const deckById = (id: string) => DECKS.find(d => d.id === id);
 
 // Mazo activo: el motor y la interfaz leen DECK y SIMILAR; useDeck cambia su contenido en su lugar.

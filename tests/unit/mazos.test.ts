@@ -112,10 +112,11 @@ describe('mazos nuevos', () => {
     }
     throw new Error('no salió MIEL en N1');
   });
-  it('cada palabra tiene sus sílabas; las de 3+ son largas', () => {
+  it('cada palabra tiene sus sílabas; solo las de 4+ son largas y ABEJA siempre libre', () => {
     for (const w of WORDS) expect(SYLLABLES[w.id]).toBeGreaterThan(0);
     const long = WORDS.filter(w => isLong(w.id)).map(w => w.text).join(' ');
-    expect(long).toBe('ABEJA MARIPOSA TORTUGA JIRAFA ELEFANTE CABALLO GALLINA PIÑATA REGALO GELATINA AMIGOS ESTRELLA ESFERA CAMPANA');
+    expect(long).toBe('MARIPOSA ELEFANTE GELATINA');
+    expect(isLong('abeja')).toBe(false); expect(isLong('jirafa')).toBe(false);
   });
   it('las largas se desbloquean al dominar (N4) todas las cortas del mazo', () => {
     useDeck('animales');
@@ -129,8 +130,8 @@ describe('mazos nuevos', () => {
     const almost = new Map(all); almost.delete(short[0]);
     expect(lockedWord('elefante', almost)).toBe(true);
     // una larga que ya se empezó no se vuelve a bloquear
-    almost.set('jirafa', { level: 2, mastered: false, complete: false });
-    expect(lockedWord('jirafa', almost)).toBe(false);
+    almost.set('elefante', { level: 2, mastered: false, complete: false });
+    expect(lockedWord('elefante', almost)).toBe(false);
   });
   it('el ajuste por palabra cambia el bloqueo', () => {
     useDeck('animales');
@@ -139,5 +140,12 @@ describe('mazos nuevos', () => {
       expect(lockedWord('elefante', wordStates([]))).toBe(false);
       expect(lockedWord('perro', wordStates([]))).toBe(true);
     } finally { delete LENGTH_OVERRIDE.elefante; delete LENGTH_OVERRIDE.perro; }
+  });
+  it('las palabras nuevas salen de menos a más sílabas', () => {
+    useDeck('animales');
+    const sess = new Session(wordStates([]), seeded(1));
+    const t = (sess as unknown as { targets: string[] }).targets;
+    expect(t.every(id => SYLLABLES[id] <= 2)).toBe(true);
+    expect(t).toContain('pez'); // la única de 1 sílaba va primero
   });
 });
