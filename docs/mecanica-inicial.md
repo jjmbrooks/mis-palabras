@@ -50,7 +50,7 @@ Especificación de la mecánica del producto mínimo viable de Mis Palabras. Cad
 5. Las opciones son **solo palabras escritas**, sin dibujo. En `leer` **la palabra meta no suena antes de responder**; suena **después**, como confirmación. En `elegir_texto` la palabra hablada es el estímulo (§3.6).
 
 **Por qué:**
-- Discriminación entre 2–4 opciones en ensayos discretos (Spector, 2011; Steinbrenner et al., 2020; evidencia §2). Los distractores parecidos se introducen después (Buckley y Bird, 1993).
+- Discriminación entre 2–4 opciones en ensayos discretos (Spector, 2011; Steinbrenner et al., 2020; evidencia §2). Los distractores parecidos se introducen después (Buckley y Bird, 1993). Si el mazo activo no tiene un distractor muy distinto, N1/N2 lo toman de palabras ya vistas de otros mazos del niño (ver [mazos-nuevos.md](mazos-nuevos.md)). Las palabras nuevas salen de menos a más sílabas; las de 4+ sílabas esperan a que se dominen (N4) las demás del mazo (ABEJA siempre libre; se ajusta por palabra).
 - Posición aleatoria: *inferencia de diseño* ya señalada en evidencia §2, para evitar aciertos por lugar.
 - Demora antes de habilitar: *inferencia de diseño* (evitar el tocar al azar).
 - La palabra solo suena después de responder en `leer`: si sonara antes, daría la respuesta (D3, D12, D14). El dibujo como retroalimentación tras responder funcionó en algunos alumnos (Didden et al., 2000).

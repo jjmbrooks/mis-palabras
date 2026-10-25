@@ -29,6 +29,7 @@ h1 { font-size:2.2rem; margin:0; } h2 { font-size:1.2rem; margin:0 0 10px; }
 .row { display:flex; gap:10px; } .row > * { flex:1; }
 input[type=text], input:not([type]) { font:inherit; font-size:1.1rem; min-height:56px; padding:0 14px; border-radius:14px; border:2px solid var(--line); min-width:0; }
 .kids { display:flex; flex-wrap:wrap; gap:8px; } .kid { width:auto; } .kid.sel { border-color:var(--pri); background:#e3f1ec; font-weight:700; }
+.deckpick { display:block; text-align:center; } .deckpick select { font:inherit; padding:4px 6px; border-radius:8px; }
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
 table { border-collapse:collapse; width:100%; font-size:1rem; } td, th { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); }
 .note { background:#fff4cf; border-radius:12px; padding:10px 12px; margin:0; font-size:1.05rem; }

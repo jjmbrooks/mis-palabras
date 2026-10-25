@@ -1,8 +1,8 @@
 import './style.css';
-import { DECK, wordById, svgFor } from './deck';
-import { Session, IndependentSession, wordStates, nextHelp, toCSV, isIndependent, instructionFor, progress, cardTypeFor, Level, INDEP_GOAL, INDEP_MINUTES, INDEP_MIN_WORDS, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
+import { DECK, DECKS, wordById, svgFor, useDeck, activeDeck } from './deck';
+import { Session, IndependentSession, wordStates, seenWords, nextHelp, toCSV, isIndependent, instructionFor, progress, cardTypeFor, Level, INDEP_GOAL, INDEP_MINUTES, INDEP_MIN_WORDS, DECK_ID, Help, Mode, TrialSpec, TrialRecord } from './engine';
 import { rewardFact } from './facts';
-import { say, chime, getVolume, setVolume } from './audio';
+import { say, chime, animalSound, getVolume, setVolume } from './audio';
 import { Store, Child, demoStore, familyStore, signIn, onUser, newId } from './store';
 
 const app = document.getElementById('app')!;
@@ -27,7 +27,8 @@ applyMotion();
 let store: Store | null = null;
 let child: Child | null = null;
 
-const BEE = svgFor(DECK[0]);
+useDeck(localStorage.getItem('mp.deck') ?? '');
+const BEE = svgFor(wordById('abeja'));
 /** Palabra con auto-ajuste por ancho (D15): --n = número de letras, ver .word en style.css. */
 const wordHtml = (text: string) => `<div class="word" style="--n:${[...text].length}">${text}</div>`;
 
@@ -72,7 +73,7 @@ async function home() {
     <button class="btn primary big" id="start" ${child ? '' : 'disabled'}>Empezar sesión con tutor</button>
     ${child ? (soloOk ? `<button class="btn big" id="solo">Practicar solo (hasta ${INDEP_GOAL} aciertos o ${INDEP_MINUTES} min)</button>`
       : `<p class="small center-t">«Practicar solo» se abre cuando haya ${INDEP_MIN_WORDS} palabras dominadas con el tutor.</p>`) : ''}
-    <p class="small center-t">Mazo: Abejas y jardín · ${settings.minutes} min</p>
+    <label class="deckpick small">Mazo: <select id="deck" aria-label="Mazo">${DECKS.map(d => `<option value="${d.id}" ${activeDeck().id === d.id ? 'selected' : ''}>${d.name}</option>`).join('')}</select> · ${settings.minutes} min</label>
     <button class="btn ghost" id="adult">Mantén presionado para ajustes del tutor</button>
   </main>`);
   app.querySelectorAll<HTMLButtonElement>('.kid').forEach(b => b.onclick = () => { child = kids.find(k => k.id === b.dataset.id)!; home(); });
@@ -80,6 +81,7 @@ async function home() {
     e.preventDefault(); const v = $<HTMLInputElement>('#nick').value;
     if (v.trim()) { child = await store!.addChild(v); home(); }
   };
+  $<HTMLSelectElement>('#deck').onchange = e => { const v = (e.target as HTMLSelectElement).value; useDeck(v); localStorage.setItem('mp.deck', v); home(); };
   $('#start').onclick = () => child && session('tutor');
   $('#solo') && ($('#solo').onclick = () => child && session('independiente'));
   adultLock($('#adult'), tutorPanel);
@@ -169,7 +171,7 @@ async function session(mode: Mode) {
   const history = await s.trials(c.id);
   const states = wordStates(history);
   // D15: el dibujo ya acompaña cada ensayo de elegir, así que no hay carta de enseñanza previa (daría la respuesta).
-  const sess = solo ? null : new Session(states, Math.random, undefined, [], { knowsPictures: true });
+  const sess = solo ? null : new Session(states, Math.random, undefined, [], { knowsPictures: true, seen: seenWords(history) });
   const indep = solo ? new IndependentSession(states, Math.random) : null;
   if (indep && !indep.available) return home();
   const sessionId = newId();
@@ -255,7 +257,7 @@ async function session(mode: Mode) {
         app.querySelectorAll<HTMLButtonElement>('.stage button').forEach(x => (x.disabled = true));
         const correct = isIndependent(firstTry && ok, help);
         if (ok) {
-          coins++; $('#coins').textContent = String(coins); chime();
+          coins++; $('#coins').textContent = String(coins); chime(); animalSound(spec.word);
           // D15/D16: tras acertar queda solo la palabra correcta; en N4 y N5 (sin dibujo) el dibujo aparece ahora, como retroalimentación.
           buttons.forEach(b => { if (b.dataset.id !== spec.word) b.hidden = true; else b.classList.add('ok'); });
           $('#help').hidden = true;
@@ -301,7 +303,7 @@ async function session(mode: Mode) {
   clearInterval(tick);
   speechSynthesis?.cancel();
   const ended = Date.now();
-  if (n > 0) await s.addSession({ id: sessionId, childId: c.id, mode, deck: DECK_ID, startedAt: started, endedAt: ended,
+  if (n > 0) await s.addSession({ id: sessionId, childId: c.id, mode, deck: activeDeck().id, startedAt: started, endedAt: ended,
     durationMs: Math.min(3600000, ended - started), trials: Math.min(100, n) });
   if (indep) return reward([...practiced], coins);
   h(`<main class="screen center">
