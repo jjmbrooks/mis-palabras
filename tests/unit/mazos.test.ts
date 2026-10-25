@@ -18,12 +18,13 @@ describe('mazos nuevos', () => {
   it('cuatro mazos con las palabras pedidas', () => {
     const t = (id: string) => DECKS.find(d => d.id === id)!.words.map(w => wordById(w).text).join(' ');
     expect(t('animales')).toBe('PERRO GATO VACA PATO LEÓN OSO PEZ MONO CERDO BURRO TORTUGA JIRAFA ELEFANTE CABALLO GALLINA');
-    expect(t('cumpleanos')).toBe('PASTEL PIÑATA GLOBO VELA REGALO DULCES GORRO SERPENTINA TACOS GELATINA NIEVE AMIGOS');
-    expect(t('navidad')).toBe('ÁRBOL ESTRELLA REGALO PIÑATA BOTA PONCHE BUÑUELO NACIMIENTO ESFERA CAMPANA VELA');
+    expect(t('cumpleanos')).toBe('PASTEL PIÑATA GLOBO VELA REGALO DULCES GORRO SERPENTINA GELATINA AMIGOS');
+    expect(t('navidad')).toBe('ÁRBOL ESTRELLA REGALO PIÑATA BOTA ESFERA CAMPANA VELA NIEVE RENO SANTA');
   });
-  it('REGALO, PIÑATA y VELA son una sola entrada compartida; NIEVE solo en Cumpleaños', () => {
-    expect(DECKS.find(d => d.id === 'navidad')!.words).not.toContain('nieve');
-    expect(DECKS.find(d => d.id === 'cumpleanos')!.words).toContain('nieve');
+  it('REGALO, PIÑATA y VELA son una sola entrada compartida; NIEVE (copos) solo en Navidad', () => {
+    expect(DECKS.find(d => d.id === 'navidad')!.words).toContain('nieve');
+    expect(DECKS.find(d => d.id === 'cumpleanos')!.words).not.toContain('nieve');
+    expect(WORDS.filter(w => w.id === 'nieve')).toHaveLength(1);
     for (const id of ['regalo', 'pinata', 'vela']) {
       expect(WORDS.filter(w => w.id === id)).toHaveLength(1);
       useDeck('cumpleanos'); const a = DECK.find(w => w.id === id);

@@ -1,5 +1,5 @@
 // D15: prueba de maquetación. Sin scroll en la pantalla de ensayo y ninguna palabra cortada
-// (NACIMIENTO, la más larga de los mazos, incluida) en 360×640 y 412×915. Usa el servidor de desarrollo con ?semilla (solo DEV).
+// (SERPENTINA, la más larga de los mazos, incluida) en 360×640 y 412×915. Usa el servidor de desarrollo con ?semilla (solo DEV).
 // Uso: npm run test:layout  (CHROME=/ruta/a/chrome; SHOTS=/carpeta/prefijo- para guardar capturas)
 import { createServer } from 'vite';
 import { chromium } from 'playwright-core';
@@ -40,10 +40,10 @@ try {
         seen.add(kind);
         if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}.png` });
         if (kind !== 'leer') {
-          // Peor caso: la palabra más larga de todos los mazos (NACIMIENTO, 10 letras) en cada opción.
-          await p.evaluate(() => document.querySelectorAll('.opt .word').forEach(e => { e.textContent = 'NACIMIENTO'; e.style.setProperty('--n', '10'); }));
-          await check(p, `${label} NACIMIENTO`);
-          if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}-nacimiento.png` });
+          // Peor caso: la palabra más larga de todos los mazos (SERPENTINA, 10 letras) en cada opción.
+          await p.evaluate(() => document.querySelectorAll('.opt .word').forEach(e => { e.textContent = 'SERPENTINA'; e.style.setProperty('--n', '10'); }));
+          await check(p, `${label} SERPENTINA`);
+          if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}-serpentina.png` });
           // Con la Ayuda visible (dibujo + palabra modelo) también debe caber.
           // Corrección sin error: un error resalta la correcta como modelo, deja solo esa activa y muestra dibujo + palabra.
           const wrong = await p.$$eval('.opt', (bs, w) => bs.findIndex(b => b.getAttribute('aria-label') !== w), await p.$eval('#model .word', e => e.textContent));

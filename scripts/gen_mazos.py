@@ -203,14 +203,6 @@ def serpentina():
     a.path('M140 150 Q160 120 176 140 Q190 160 178 176', 'none', 'stroke="#ffc21a" stroke-width="9" stroke-linecap="round"')
     a.shine(82, 134, 12, 6); return a.face(104, 152, .85, 15)
 @art
-def tacos():
-    a = Art()
-    for cx, rot in ((70, -12), (130, 12)):
-        a.path(f'M{cx-46} 150 Q{cx} 50 {cx+46} 150Z', a.g('#fff1b8', '#f3c75a', '#cf9420'), f'transform="rotate({rot} {cx} 120)"')
-        a.path(f'M{cx-36} 132 Q{cx-20} 108 {cx} 118 Q{cx+20} 104 {cx+36} 132', 'none', f'stroke="#5cbf4f" stroke-width="9" stroke-linecap="round" transform="rotate({rot} {cx} 120)"')
-        a.circ(cx - 8, 116, 5, '#e2362a', f'transform="rotate({rot} {cx} 120)"'); a.circ(cx + 12, 112, 4, '#e2362a', f'transform="rotate({rot} {cx} 120)"')
-    a.face(70, 136, .6, 11); return a.face(130, 136, .6, 11)
-@art
 def gelatina():
     a = Art(); a.ell(100, 166, 62, 12, a.g('#ffffff', '#dfe8ee'))
     a.path('M50 162 L58 84 Q100 64 142 84 L150 162 Q100 174 50 162Z', a.g('#ffd1dc', '#ff4f7b', '#c51f4d'), 'opacity=".95"')
@@ -219,10 +211,16 @@ def gelatina():
     a.shine(72, 106, 7, 20, 10); return a.face(100, 124, .9, 18)
 @art
 def nieve():
-    a = Art(); a.path('M70 108 L100 186 L130 108Z', a.g('#ffe9b8', '#e8b25e', '#b97c2a'))
-    for x in (85, 100, 115): a.path(f'M{x-10} 130 L{x} 150 M{x+10} 130 L{x} 150', 'none', 'stroke="#c8913f" stroke-width="2"')
-    a.circ(84, 92, 26, a.g('#ffe2ef', '#ffa6c8', '#e06d9b')); a.circ(116, 92, 26, a.g('#e6fff0', '#9fe6bd', '#4fbf86')); a.circ(100, 66, 26, a.g('#fffaf0', '#fff0d6', '#e6cfa6'))
-    a.shine(90, 52, 8, 4); return a.face(100, 74, .75, 13)
+    a = Art(); import math
+    for k in range(6):
+        t = math.pi / 3 * k; x, y = 100 + 74 * math.cos(t), 100 + 74 * math.sin(t)
+        a.path(f'M100 100 L{x:.1f} {y:.1f}', 'none', 'stroke="#7cc4f2" stroke-width="10" stroke-linecap="round"')
+        for f in (.55, .8):
+            bx, by = 100 + 74 * f * math.cos(t), 100 + 74 * f * math.sin(t)
+            for sg in (-1, 1):
+                u = t + sg * .7; a.path(f'M{bx:.1f} {by:.1f} L{bx+18*math.cos(u):.1f} {by+18*math.sin(u):.1f}', 'none', 'stroke="#a9dcff" stroke-width="7" stroke-linecap="round"')
+    a.circ(100, 100, 38, a.g('#ffffff', '#e4f5ff', '#9fd4f5')); a.shine(86, 82, 12, 6)
+    return a.face(100, 102, .85, 15)
 @art
 def amigos():
     a = Art()
@@ -253,27 +251,6 @@ def bota():
     a.rect(58, 34, 72, 26, 12, a.g('#ffffff', '#eeeeee', '#cfcfcf')); a.circ(150, 160, 0.1, '#fff')
     a.shine(78, 80, 6, 16, 0); return a.face(94, 104, .85, 15)
 @art
-def ponche():
-    a = Art(); a.ell(100, 168, 52, 10, '#a5582b')
-    a.path('M48 86 L56 162 Q100 178 144 162 L152 86Z', a.g('#e8a473', '#b9622a', '#7e3a12')); a.ell(100, 86, 52, 13, a.g('#ffb36b', '#e9762a'))
-    for x, c in ((80, '#ffd23f'), (104, '#e2362a'), (124, '#ffb21a')): a.circ(x, 84, 7, c)
-    a.path('M150 102 Q178 104 172 128 Q166 146 146 140', 'none', 'stroke="#b9622a" stroke-width="9"')
-    a.path('M90 64 Q84 50 92 38 M110 64 Q104 50 112 36', 'none', 'stroke="#d8d0c6" stroke-width="4" stroke-linecap="round" opacity=".8"')
-    a.rect(124, 40, 7, 50, 3, '#8b4a1e', 'transform="rotate(18 127 65)"'); return a.face(100, 124, .85, 18)
-@art
-def bunuelo():
-    a = Art(); a.ell(100, 112, 70, 54, a.g('#ffe9a8', '#e8b04e', '#b8761e'))
-    for x, y in ((70, 96), (128, 98), (98, 140), (60, 128), (140, 132), (96, 76)): a.ell(x, y, 9, 6, '#f7d07a', 'opacity=".9"')
-    for x, y in ((80, 84), (120, 82), (110, 130), (76, 140), (140, 112)): a.circ(x, y, 3, '#fff')
-    a.shine(64, 82, 14, 6); return a.face(100, 108, .9, 18)
-@art
-def nacimiento():
-    a = Art(); a.path('M30 92 L100 40 L170 92 L160 96 L100 54 L40 96Z', a.g('#d8a06a', '#a8642c'))
-    a.rect(44, 92, 112, 84, 4, a.g('#f3d9b0', '#d9b07a', '#a8783c'), 'opacity=".55"')
-    a.path('M60 176 L72 140 L128 140 L140 176Z', a.g('#e8c07a', '#c79a4a')); a.path('M70 140 Q100 128 130 140', 'none', 'stroke="#f7df9a" stroke-width="6"')
-    a.ell(100, 132, 24, 13, a.g('#fff8ec', '#f2e3c8')); a.circ(100, 120, 13, a.g('#fde0c8', '#f2bd98'))
-    a.path('M100 10 L104 20 L115 21 L107 28 L109 39 L100 33 L91 39 L93 28 L85 21 L96 20Z', '#ffd23f'); return a.face(100, 120, .4, 6)
-@art
 def esfera():
     a = Art(); a.rect(90, 30, 20, 16, 4, a.g('#fff2b0', '#e8b400')); a.path('M100 30 Q92 16 100 12 Q108 16 100 30', 'none', 'stroke="#c9a400" stroke-width="3"')
     a.circ(100, 108, 62, a.g('#ffb3c8', '#e2366a', '#9c1440')); a.path('M42 98 Q100 118 158 98', 'none', 'stroke="#ffd23f" stroke-width="7" opacity=".9"')
@@ -285,6 +262,26 @@ def campana():
     a.path('M70 34 Q60 20 80 22 Q90 26 84 34Z', '#e2362a'); a.path('M130 34 Q140 20 120 22 Q110 26 116 34Z', '#e2362a')
     a.shine(74, 70, 9, 18, 10); return a.face(100, 104, .95, 20)
 
+@art
+def reno():
+    a = Art()
+    for sx in (-1, 1):
+        a.path(f'M{100+sx*22} 62 Q{100+sx*30} 30 {100+sx*48} 18 M{100+sx*30} 40 Q{100+sx*46} 40 {100+sx*58} 30', 'none', 'stroke="#8a5a32" stroke-width="8" stroke-linecap="round"')
+        a.ell(100 + sx * 46, 78, 16, 9, '#a8743f', f'transform="rotate({sx*25} {100+sx*46} 78)"')
+    a.ell(100, 162, 40, 24, a.g('#c48a52', '#9a6534', '#6e4420'))
+    a.circ(100, 100, 46, a.g('#c48a52', '#9a6534', '#6e4420')); a.ell(100, 124, 26, 18, a.g('#f3d6b4', '#e2b98c'))
+    a.circ(100, 118, 9, a.g('#ff8a8a', '#e83d3d', '#b31f1f')); a.shine(80, 78, 14, 7)
+    return a.face(100, 96, .9, 18)
+@art
+def santa():
+    a = Art()
+    a.ell(100, 170, 46, 22, a.g('#ff7a7a', '#e23b3b', '#a81d1d'))
+    a.path('M56 104 Q54 176 100 182 Q146 176 144 104Z', a.g('#ffffff', '#f2f2f2', '#d8dde6'))
+    a.circ(100, 100, 40, a.g('#ffe4cf', '#f6c7a4', '#e0a47c'))
+    a.path('M54 112 Q62 150 100 158 Q138 150 146 112 Q130 128 100 128 Q70 128 54 112Z', a.g('#ffffff', '#f4f6f8', '#d8dde6'))
+    a.path('M62 76 Q70 26 128 34 Q160 42 162 80Z', a.g('#ff7a7a', '#e23b3b', '#a81d1d')); a.circ(164, 82, 11, '#ffffff')
+    a.rect(56, 68, 100, 18, 9, a.g('#ffffff', '#eef1f4', '#d0d6de'))
+    a.shine(76, 96, 8, 4); return a.face(100, 104, .8, 15)
 if __name__ == '__main__':
     for k, fn in W.items():
         with open(os.path.join(OUT, f'{k}.svg'), 'w') as f: f.write(fn().svg() + '\n')

@@ -4,13 +4,13 @@ Estado: en revisión (rama `feat/mazos-nuevos`), sin publicar.
 
 ## Palabras
 - **Animales (15):** PERRO, GATO, VACA, PATO, LEÓN, OSO, PEZ, MONO, CERDO, BURRO, TORTUGA, JIRAFA, ELEFANTE, CABALLO, GALLINA.
-- **Cumpleaños (12):** PASTEL, PIÑATA, GLOBO, VELA, REGALO, DULCES, GORRO, SERPENTINA, TACOS, GELATINA, NIEVE, AMIGOS.
-- **Navidad (11):** ÁRBOL, ESTRELLA, REGALO, PIÑATA, BOTA, PONCHE, BUÑUELO, NACIMIENTO, ESFERA, CAMPANA, VELA.
+- **Cumpleaños (10):** PASTEL, PIÑATA, GLOBO, VELA, REGALO, DULCES, GORRO, SERPENTINA, GELATINA, AMIGOS.
+- **Navidad (11):** ÁRBOL, ESTRELLA, REGALO, PIÑATA, BOTA, ESFERA, CAMPANA, VELA, NIEVE, RENO, SANTA.
 
 ## Entradas compartidas
 `src/deck.ts` tiene un registro único (`WORDS`), y cada mazo (`DECKS`) solo lista ids. REGALO, PIÑATA y VELA son **una sola entrada**
 (`regalo`, `pinata`, `vela`) en Cumpleaños y Navidad. Comparten dibujo, historial y nivel, y el audio de palabra también,
-porque la voz (`say`, es-MX) lee el mismo texto. NIEVE es la nieve de garrafa (helado) y está solo en Cumpleaños (revisión de Brooks).
+porque la voz (`say`, es-MX) lee el mismo texto. NIEVE es una entrada única, solo en Navidad, dibujada como copo de nieve (ya no helado; revisión de Brooks).
 **ÁRBOL de Navidad** es una entrada aparte (`arbol_navidad`): el pino adornado no es el árbol del mazo Abejas. Su audio sí es el mismo.
 El mazo activo se elige en la pantalla de inicio y se guarda en `mp.deck` (solo en el dispositivo). La sesión guarda `deck`, y las reglas aceptan
 `abejas-jardin`, `animales`, `cumpleanos` y `navidad`. **Hay que desplegar las reglas al publicar.**
@@ -18,7 +18,7 @@ El mazo activo se elige en la pantalla de inicio y se guarda en `mp.deck` (solo 
 ## Arte
 SVG original escrito por código en `scripts/gen_mazos.py` (se regenera con `python3 scripts/gen_mazos.py`), en el estilo de
 [estilo-mazo-abejas.md](estilo-mazo-abejas.md): objeto kawaii con cara, degradados radiales, reflejo, sin contorno negro y sombra difusa.
-Palabra en DejaVu Sans Bold mayúsculas. No hay personajes con derechos (ni Santa Claus ni Disney). AMIGOS son dos niños genéricos.
+Palabra en DejaVu Sans Bold mayúsculas. No hay personajes con derechos: SANTA es un diseño propio y genérico (señor kawaii de barba blanca y gorro rojo), sin parecido con ilustraciones de marcas (Coca-Cola, Disney, etc.). RENO es un reno genérico con nariz roja redonda. AMIGOS son dos niños genéricos.
 
 ## Animales: sonido y dato curioso (reforzador)
 Tras un acierto con un animal suena la campanita y después el sonido del animal (`animalSound` en `src/audio.ts`). Al final del modo solo

@@ -21,9 +21,9 @@ const W: [string, string][] = [['abeja', 'ABEJA'], ['miel', 'MIEL'], ['flor', 'F
   // Animales
   ['perro', 'PERRO'], ['gato', 'GATO'], ['vaca', 'VACA'], ['pato', 'PATO'], ['leon', 'LEÓN'], ['oso', 'OSO'], ['pez', 'PEZ'], ['mono', 'MONO'], ['cerdo', 'CERDO'], ['burro', 'BURRO'], ['tortuga', 'TORTUGA'], ['jirafa', 'JIRAFA'], ['elefante', 'ELEFANTE'], ['caballo', 'CABALLO'], ['gallina', 'GALLINA'],
   // Cumpleaños
-  ['pastel', 'PASTEL'], ['pinata', 'PIÑATA'], ['globo', 'GLOBO'], ['vela', 'VELA'], ['regalo', 'REGALO'], ['dulces', 'DULCES'], ['gorro', 'GORRO'], ['serpentina', 'SERPENTINA'], ['tacos', 'TACOS'], ['gelatina', 'GELATINA'], ['nieve', 'NIEVE'], ['amigos', 'AMIGOS'],
+  ['pastel', 'PASTEL'], ['pinata', 'PIÑATA'], ['globo', 'GLOBO'], ['vela', 'VELA'], ['regalo', 'REGALO'], ['dulces', 'DULCES'], ['gorro', 'GORRO'], ['serpentina', 'SERPENTINA'], ['gelatina', 'GELATINA'], ['amigos', 'AMIGOS'],
   // Navidad (además de regalo, pinata y vela)
-  ['arbol_navidad', 'ÁRBOL'], ['estrella', 'ESTRELLA'], ['bota', 'BOTA'], ['ponche', 'PONCHE'], ['bunuelo', 'BUÑUELO'], ['nacimiento', 'NACIMIENTO'], ['esfera', 'ESFERA'], ['campana', 'CAMPANA']];
+  ['arbol_navidad', 'ÁRBOL'], ['estrella', 'ESTRELLA'], ['bota', 'BOTA'], ['esfera', 'ESFERA'], ['campana', 'CAMPANA'], ['nieve', 'NIEVE'], ['reno', 'RENO'], ['santa', 'SANTA']];
 export const WORDS: Word[] = W.map(([id, text]) => ({ id, text, svg: prefix(ART[`./art/${id}.svg`], id) }));
 
 export interface DeckDef { id: string; name: string; words: string[]; similar: [string, string][] }
@@ -31,8 +31,8 @@ export const DECKS: DeckDef[] = [
   { id: 'abejas-jardin', name: 'Abejas y jardín', words: W.slice(0, 15).map(w => w[0]), similar: [['pan', 'panal'], ['mama', 'papa']] },
   { id: 'animales', name: 'Animales', words: ['perro', 'gato', 'vaca', 'pato', 'leon', 'oso', 'pez', 'mono', 'cerdo', 'burro', 'tortuga', 'jirafa', 'elefante', 'caballo', 'gallina'],
     similar: [['gato', 'pato'], ['perro', 'cerdo'], ['mono', 'oso']] },
-  { id: 'cumpleanos', name: 'Cumpleaños', words: ['pastel', 'pinata', 'globo', 'vela', 'regalo', 'dulces', 'gorro', 'serpentina', 'tacos', 'gelatina', 'nieve', 'amigos'], similar: [['globo', 'gorro']] },
-  { id: 'navidad', name: 'Navidad', words: ['arbol_navidad', 'estrella', 'regalo', 'pinata', 'bota', 'ponche', 'bunuelo', 'nacimiento', 'esfera', 'campana', 'vela'], similar: [['estrella', 'esfera'], ['bota', 'vela']] },
+  { id: 'cumpleanos', name: 'Cumpleaños', words: ['pastel', 'pinata', 'globo', 'vela', 'regalo', 'dulces', 'gorro', 'serpentina', 'gelatina', 'amigos'], similar: [['globo', 'gorro']] },
+  { id: 'navidad', name: 'Navidad', words: ['arbol_navidad', 'estrella', 'regalo', 'pinata', 'bota', 'esfera', 'campana', 'vela', 'nieve', 'reno', 'santa'], similar: [['estrella', 'esfera'], ['bota', 'vela']] },
 ];
 export const deckById = (id: string) => DECKS.find(d => d.id === id);
 
