@@ -1,5 +1,5 @@
 // D15: prueba de maquetación. Sin scroll en la pantalla de ensayo y ninguna palabra cortada
-// (MARIPOSA incluida) en 360×640 y 412×915. Usa el servidor de desarrollo con ?semilla (solo DEV).
+// (NACIMIENTO, la más larga de los mazos, incluida) en 360×640 y 412×915. Usa el servidor de desarrollo con ?semilla (solo DEV).
 // Uso: npm run test:layout  (CHROME=/ruta/a/chrome; SHOTS=/carpeta/prefijo- para guardar capturas)
 import { createServer } from 'vite';
 import { chromium } from 'playwright-core';
@@ -25,7 +25,8 @@ try {
     await p.addInitScript(() => { if (window.speechSynthesis) window.speechSynthesis.speak = u => setTimeout(() => u.onend && u.onend(), 20); });
     p.on('pageerror', e => fails.push(`error JS: ${e.message}`));
     await p.goto(`http://localhost:5181/?semilla`);
-    await p.click('#d'); await p.waitForSelector('#start'); await p.click('#start');
+    await p.click('#d'); await p.waitForSelector('#start'); await check(p, `${width}x${height} inicio con selector de mazo`);
+    await p.click('#start');
     const seen = new Set(); let n = 0;
     while (n++ < 200 && !['leer', 'dibujo2', 'dibujo3', 'sin-dibujo3'].every(k => seen.has(k))) {
       await p.waitForSelector('#go, #again:not([disabled]), #home', { timeout: 20000 });
@@ -39,10 +40,10 @@ try {
         seen.add(kind);
         if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}.png` });
         if (kind !== 'leer') {
-          // Peor caso: la palabra más larga del mazo en cada opción.
-          await p.evaluate(() => document.querySelectorAll('.opt .word').forEach(e => { e.textContent = 'MARIPOSA'; e.style.setProperty('--n', '8'); }));
-          await check(p, `${label} MARIPOSA`);
-          if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}-mariposa.png` });
+          // Peor caso: la palabra más larga de todos los mazos (NACIMIENTO, 10 letras) en cada opción.
+          await p.evaluate(() => document.querySelectorAll('.opt .word').forEach(e => { e.textContent = 'NACIMIENTO'; e.style.setProperty('--n', '10'); }));
+          await check(p, `${label} NACIMIENTO`);
+          if (process.env.SHOTS) await p.screenshot({ path: `${process.env.SHOTS}${width}x${height}-${kind}-nacimiento.png` });
           // Con la Ayuda visible (dibujo + palabra modelo) también debe caber.
           // Corrección sin error: un error resalta la correcta como modelo, deja solo esa activa y muestra dibujo + palabra.
           const wrong = await p.$$eval('.opt', (bs, w) => bs.findIndex(b => b.getAttribute('aria-label') !== w), await p.$eval('#model .word', e => e.textContent));

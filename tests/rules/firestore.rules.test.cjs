@@ -92,6 +92,10 @@ describe('firestore.rules', () => {
     await assertFails(b.doc('families/famA/sessions/s2').set(sess()));
     await assertFails(env.unauthenticatedContext().firestore().doc('families/famA/sessions/s1').get());
   });
+  it('Mazos nuevos: acepta sesiones de Animales, Cumpleaños y Navidad', async () => {
+    const db = fam('famA');
+    for (const deck of ['animales', 'cumpleanos', 'navidad']) await assertSucceeds(db.doc(`families/famA/sessions/m-${deck}`).set({ ...sess(), deck }));
+  });
   it('D13: rechaza sesiones y ensayos inválidos', async () => {
     const db = fam('famA');
     await assertFails(db.doc('families/famA/sessions/s1').set({ ...sess(), nickname: 'x' }));

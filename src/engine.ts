@@ -1,5 +1,5 @@
 // Lógica pura del Modo con tutor (docs/mecanica-inicial.md). Sin DOM ni Firebase: probada en tests/unit.
-import { DECK, SIMILAR } from './deck';
+import { DECK, SIMILAR, wordById } from './deck';
 
 /**
  * Tipos de carta (D12, docs/mecanica-inicial.md §2).
@@ -27,7 +27,7 @@ export interface TrialRecord {
 }
 
 export type Mode = 'tutor' | 'independiente';
-export const DECK_ID = 'abejas-jardin';
+export const DECK_ID = 'abejas-jardin'; // mazo por omisión; el de cada sesión es activeDeck().id (deck.ts)
 
 /** Registro de sesión (D13). Sin datos del niño más allá de su id aleatorio. */
 export interface SessionRecord {
@@ -138,7 +138,7 @@ export function shuffle<T>(arr: T[], rng: Rng): T[] {
 }
 const similar = (a: string, b: string) => SIMILAR.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 const upper = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
-const textOf = (id: string) => upper(DECK.find(w => w.id === id)!.text);
+const textOf = (id: string) => upper(wordById(id).text);
 const len = (id: string) => [...textOf(id)].length;
 /** N1/N2: distractor muy distinto (otra letra inicial y ≥2 letras de diferencia en longitud). */
 export const isVeryDifferent = (a: string, b: string) => textOf(a)[0] !== textOf(b)[0] && Math.abs(len(a) - len(b)) >= 2;

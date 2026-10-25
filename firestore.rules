@@ -38,7 +38,7 @@ service cloud.firestore {
         && d.keys().hasAll(['childId', 'mode', 'deck', 'startedAt', 'endedAt', 'durationMs', 'trials'])
         && d.childId is string && d.childId.size() <= 40
         && d.mode in ['tutor', 'independiente']
-        && d.deck in ['abejas-jardin']
+        && d.deck in ['abejas-jardin', 'animales', 'cumpleanos', 'navidad']
         && d.startedAt is timestamp && d.endedAt is timestamp && d.endedAt >= d.startedAt
         && d.durationMs is int && d.durationMs >= 0 && d.durationMs <= 3600000
         && d.trials is int && d.trials >= 0 && d.trials <= 100;
